@@ -1,12 +1,14 @@
 name: Deploy
 on:
-  push:
+  workflow_run:
+    workflows:
+      - Build
     branches:
       - master
+    types:
+      - completed
 jobs:
   website:
-    needs:
-      - pre-commit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
