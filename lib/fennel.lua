@@ -5442,12 +5442,12 @@ do
   end
   local built_ins = eval([===[;; These macros are awkward because their definition cannot rely on the any
   ;; built-in macros, only special forms. (no when, no icollect, etc)
-  
+
   (fn copy [t]
     (let [out []]
       (each [_ v (ipairs t)] (table.insert out v))
       (setmetatable out (getmetatable t))))
-  
+
   (fn ->* [val ...]
     "Thread-first macro.
   Take the first value and splice it into the second form as its first argument.
@@ -5458,7 +5458,7 @@ do
         (table.insert elt 2 x)
         (set x elt)))
     x)
-  
+
   (fn ->>* [val ...]
     "Thread-last macro.
   Same as ->, except splices the value into the last position of each form
@@ -5469,7 +5469,7 @@ do
         (table.insert elt x)
         (set x elt)))
     x)
-  
+
   (fn -?>* [val ?e ...]
     "Nil-safe thread-first macro.
   Same as -> except will short-circuit with nil when it encounters a nil value."
@@ -5482,7 +5482,7 @@ do
              (if (not= nil ,tmp)
                  (-?> ,el ,...)
                  ,tmp)))))
-  
+
   (fn -?>>* [val ?e ...]
     "Nil-safe thread-last macro.
   Same as ->> except will short-circuit with nil when it encounters a nil value."
@@ -5495,7 +5495,7 @@ do
              (if (not= ,tmp nil)
                  (-?>> ,el ,...)
                  ,tmp)))))
-  
+
   (fn ?dot [tbl ...]
     "Nil-safe table look up.
   Same as . (dot), except will short-circuit with nil when it encounters
@@ -5510,7 +5510,7 @@ do
         (table.insert lookups (# lookups) `(if (not= nil ,head)
                                              (set ,head (. ,head ,k)))))
       lookups))
-  
+
   (fn doto* [val ...]
     "Evaluate val and splice it into the first argument of subsequent forms."
     (assert (not= val nil) "missing subject")
@@ -5524,7 +5524,7 @@ do
           (table.insert form elt)))
       (table.insert form name)
       form))
-  
+
   (fn when* [condition body1 ...]
     "Evaluate body for side-effects only when condition is truthy."
     (assert body1 "expected body")
@@ -5532,7 +5532,7 @@ do
          (do
            ,body1
            ,...)))
-  
+
   (fn with-open* [closable-bindings ...]
     "Like `let`, but invokes (v:close) on each binding after evaluating the body.
   The body is evaluated inside `xpcall` so that bound values will be closed upon
@@ -5549,7 +5549,7 @@ do
       `(let ,closable-bindings
          ,closer
          (close-handlers# (_G.xpcall ,bodyfn ,traceback)))))
-  
+
   (fn extract-into [iter-tbl]
     (var (into iter-out found?) (values [] (copy iter-tbl)))
     (for [i (length iter-tbl) 2 -1]
@@ -5565,19 +5565,19 @@ do
     (assert (or (not found?) (sym? into) (table? into) (list? into))
             "expected table, function call, or symbol in &into clause")
     (values into iter-out))
-  
+
   (fn collect* [iter-tbl key-expr value-expr ...]
     "Return a table made by running an iterator and evaluating an expression that
   returns key-value pairs to be inserted sequentially into the table.  This can
   be thought of as a table comprehension. The body should provide two expressions
   (used as key and value) or nil, which causes it to be omitted.
-  
+
   For example,
     (collect [k v (pairs {:apple \"red\" :orange \"orange\"})]
       (values v k))
   returns
     {:red \"apple\" :orange \"orange\"}
-  
+
   Supports an &into clause after the iterator to put results in an existing table.
   Supports early termination with an &until clause."
     (assert (and (sequence? iter-tbl) (<= 2 (length iter-tbl)))
@@ -5593,10 +5593,10 @@ do
              (if (and (not= k# nil) (not= v# nil))
                (tset tbl# k# v#))))
          tbl#)))
-  
+
   (fn seq-collect [how iter-tbl value-expr ...]
     "Common part between icollect and fcollect for producing sequential tables.
-  
+
   Iteration code only differs in using the for or each keyword, the rest
   of the generated code is identical."
     (assert (not= nil value-expr) "expected table value expression")
@@ -5613,45 +5613,45 @@ do
                    (set i# (+ i# 1))
                    (tset tbl# i# val#))))
          tbl#)))
-  
+
   (fn icollect* [iter-tbl value-expr ...]
     "Return a sequential table made by running an iterator and evaluating an
   expression that returns values to be inserted sequentially into the table.
   This can be thought of as a table comprehension. If the body evaluates to nil
   that element is omitted.
-  
+
   For example,
     (icollect [_ v (ipairs [1 2 3 4 5])]
       (when (not= v 3)
         (* v v)))
   returns
     [1 4 16 25]
-  
+
   Supports an &into clause after the iterator to put results in an existing table.
   Supports early termination with an &until clause."
     (assert (and (sequence? iter-tbl) (<= 2 (length iter-tbl)))
             "expected iterator binding table")
     (seq-collect 'each iter-tbl value-expr ...))
-  
+
   (fn fcollect* [iter-tbl value-expr ...]
     "Return a sequential table made by advancing a range as specified by
   for, and evaluating an expression that returns values to be inserted
   sequentially into the table.  This can be thought of as a range
   comprehension. If the body evaluates to nil that element is omitted.
-  
+
   For example,
     (fcollect [i 1 10 2]
       (when (not= i 3)
         (* i i)))
   returns
     [1 25 49 81]
-  
+
   Supports an &into clause after the range to put results in an existing table.
   Supports early termination with an &until clause."
     (assert (and (sequence? iter-tbl) (< 2 (length iter-tbl)))
             "expected range binding table")
     (seq-collect 'for iter-tbl value-expr ...))
-  
+
   (fn accumulate-impl [for? iter-tbl body ...]
     (assert (and (sequence? iter-tbl) (<= 4 (length iter-tbl)))
             "expected initial value and iterator binding table")
@@ -5667,35 +5667,35 @@ do
          ,(if (list? accum-var)
             (list (sym :values) (unpack accum-var))
             accum-var))))
-  
+
   (fn accumulate* [iter-tbl body ...]
     "Accumulation macro.
-  
+
   It takes a binding table and an expression as its arguments.  In the binding
   table, the first form starts out bound to the second value, which is an initial
   accumulator. The rest are an iterator binding table in the format `each` takes.
-  
+
   It runs through the iterator in each step of which the given expression is
   evaluated, and the accumulator is set to the value of the expression. It
   eventually returns the final value of the accumulator.
-  
+
   For example,
     (accumulate [total 0
                  _ n (pairs {:apple 2 :orange 3})]
       (+ total n))
   returns 5"
     (accumulate-impl false iter-tbl body ...))
-  
+
   (fn faccumulate* [iter-tbl body ...]
     "Identical to accumulate, but after the accumulator the binding table is the
   same as `for` instead of `each`. Like collect to fcollect, will iterate over a
   numerical range like `for` rather than an iterator."
     (accumulate-impl true iter-tbl body ...))
-  
+
   (fn double-eval-safe? [x type]
     (or (= :number type) (= :string type) (= :boolean type)
         (and (sym? x) (not (multi-sym? x)))))
-  
+
   (fn partial* [f ...]
     "Return a function with all arguments partially applied to f."
     (assert f "expected a function to partially apply")
@@ -5715,10 +5715,10 @@ do
             `(fn [,_VARARG] ,body)
             `(let ,bindings
                (fn [,_VARARG] ,body))))))
-  
+
   (fn pick-args* [n f]
     "Create a function of arity n that applies its arguments to f.
-  
+
   For example,
     (pick-args 2 func)
   expands to
@@ -5733,10 +5733,10 @@ do
         (tset bindings i (gensym)))
       `(fn ,bindings
          (,f ,(unpack bindings)))))
-  
+
   (fn pick-values* [n ...]
     "Evaluate to exactly n values.
-  
+
   For example,
     (pick-values 2 ...)
   expands to
@@ -5751,7 +5751,7 @@ do
       (if (= n 0) `(values)
           `(let [,let-syms ,let-values]
              (values ,(unpack let-syms))))))
-  
+
   (fn lambda* [...]
     "Function literal with nil-checked arguments.
   Like `fn`, but will throw an exception if a declared argument is passed in as
@@ -5778,26 +5778,26 @@ do
                                           (tostring a)
                                           (or a.filename :unknown)
                                           (or a.line "?"))))))
-  
+
       (assert (= :table (type arglist)) "expected arg list")
       (each [_ a (ipairs arglist)]
         (check! a))
       (if empty-body?
           (table.insert args (sym :nil)))
       `(fn ,(unpack args))))
-  
+
   (fn macro* [name ...]
     "Define a single macro."
     (assert (sym? name) "expected symbol for macro name")
     (local args [...])
     `(macros {,(tostring name) (fn ,(unpack args))}))
-  
+
   (fn macrodebug* [form return?]
     "Print the resulting form after performing macroexpansion.
   With a second argument, returns expanded form as a string instead of printing."
     (let [handle (if return? `do `print)]
       `(,handle ,(view (macroexpand form _SCOPE)))))
-  
+
   (fn import-macros* [binding1 module-name1 ...]
     "Bind a table of macros from each macro module according to a binding form.
   Each binding form can be either a symbol or a k/v destructuring table.
@@ -5830,7 +5830,7 @@ do
                           (tostring modname)))
               (tset scope.macros import-key (. macros* macro-name))))))
     nil)
-  
+
   {:-> ->*
    :->> ->>*
    :-?> -?>*
@@ -5861,15 +5861,15 @@ do
   local match_macros = eval([===[;;; Pattern matching
   ;; This is separated out so we can use the "core" macros during the
   ;; implementation of pattern matching.
-  
+
   (fn copy [t] (collect [k v (pairs t)] k v))
-  
+
   (fn with [opts k]
     (doto (copy opts) (tset k true)))
-  
+
   (fn without [opts k]
     (doto (copy opts) (tset k nil)))
-  
+
   (fn case-values [vals pattern unifications case-pattern opts]
     (let [condition `(and)
           bindings []]
@@ -5879,7 +5879,7 @@ do
           (table.insert condition subcondition)
           (icollect [_ b (ipairs subbindings) &into bindings] b)))
       (values condition bindings)))
-  
+
   (fn case-table [val pattern unifications case-pattern opts]
     (let [condition `(and (= (_G.type ,val) :table))
           bindings []]
@@ -5916,7 +5916,7 @@ do
               (table.insert condition subcondition)
               (icollect [_ b (ipairs subbindings) &into bindings] b))))
       (values condition bindings)))
-  
+
   (fn case-guard [vals condition guards unifications case-pattern opts]
     (if (= 0 (length guards))
       (case-pattern vals condition unifications opts)
@@ -5925,7 +5925,7 @@ do
          (values `(and ,pcondition
                        (let ,bindings
                          ,condition)) bindings))))
-  
+
   (fn symbols-in-pattern [pattern]
     "gives the set of symbols inside a pattern"
     (if (list? pattern)
@@ -5950,7 +5950,7 @@ do
               name symbol))
           result)
         {}))
-  
+
   (fn symbols-in-every-pattern [pattern-list infer-unification?]
     "gives a list of symbols that are present in every pattern in the list"
     (let [?symbols (accumulate [?symbols nil
@@ -5967,7 +5967,7 @@ do
         (if (not (and infer-unification?
                       (in-scope? symbol)))
           symbol))))
-  
+
   (fn case-or [vals pattern guards unifications case-pattern opts]
     (let [pattern [(unpack pattern 2)]
           bindings (symbols-in-every-pattern pattern opts.infer-unification?)] ;; TODO opts.infer-unification instead of opts.unification?
@@ -5995,12 +5995,12 @@ do
           (values matched?
                   [`(,(unpack bindings)) `(values ,(unpack bindings-mangled))]
                   [`(,matched? ,(unpack bindings-mangled)) pre-bindings])))))
-  
+
   (fn case-pattern [vals pattern unifications opts top-level?]
     "Take the AST of values and a single pattern and returns a condition
   to determine if it matches as well as a list of bindings to
   introduce for the duration of the body if it does match."
-  
+
     ;; This function returns the following values (multival):
     ;; a "condition", which is an expression that determines whether the
     ;;   pattern should match,
@@ -6015,7 +6015,7 @@ do
     ;;   :multival? boolean - if the pattern can contain multivals  (in order to disallow patterns like [(1 2)])
     ;;   :in-where? boolean - if the pattern is surrounded by (where)  (where opts into more pattern features)
     ;;   :legacy-guard-allowed? boolean - if the pattern should allow `(a ? b) patterns
-  
+
     ;; we have to assume we're matching against multiple values here until we
     ;; know we're either in a multi-valued clause (in which case we know the #
     ;; of vals) or we're not, in which case we only care about the first one.
@@ -6080,7 +6080,7 @@ do
           (case-table val pattern unifications case-pattern opts)
           ;; literal value
           (values `(= ,val ,pattern) []))))
-  
+
   (fn add-pre-bindings [out pre-bindings]
     "Decide when to switch from the current `if` AST to a new one"
     (if pre-bindings
@@ -6094,7 +6094,7 @@ do
           tail)
         ;; otherwise, keep growing the current `if` AST.
         out))
-  
+
   (fn case-condition [vals clauses match?]
     "Construct the actual `if` AST for the given match values and clauses."
     ;; root is the original `if` AST.
@@ -6116,7 +6116,7 @@ do
                               ,body))
           out))
       root))
-  
+
   (fn count-case-multival [pattern]
     "Identify the amount of multival values that a pattern requires."
     (if (and (list? pattern) (= (. pattern 2) `?))
@@ -6130,7 +6130,7 @@ do
         (list? pattern)
         (length pattern)
         1))
-  
+
   (fn case-val-syms [clauses]
     "What is the length of the largest multi-valued clause? return a list of that
   many gensyms."
@@ -6141,7 +6141,7 @@ do
                       (math.max longest (count-case-multival pattern)))]
       (fcollect [i 1 sym-count &into (list)]
         (gensym))))
-  
+
   (fn case-impl [match? val ...]
     "The shared implementation of case and match."
     (assert (not= val nil) "missing subject")
@@ -6154,12 +6154,12 @@ do
       ;; protect against multiple evaluation of the value, bind against as
       ;; many values as we ever match against in the clauses.
       (list `let [vals val] (case-condition vals clauses match?))))
-  
+
   (fn case* [val ...]
     "Perform pattern matching on val. See reference for details.
-  
+
   Syntax:
-  
+
   (case data-expression
     pattern body
     (where pattern guards*) body
@@ -6168,13 +6168,13 @@ do
     ;; legacy:
     (pattern ? guards*) body)"
     (case-impl false val ...))
-  
+
   (fn match* [val ...]
     "Perform pattern matching on val, automatically unifying on variables in
   local scope. See reference for details.
-  
+
   Syntax:
-  
+
   (match data-expression
     pattern body
     (where pattern guards*) body
@@ -6183,7 +6183,7 @@ do
     ;; legacy:
     (pattern ? guards*) body)"
     (case-impl true val ...))
-  
+
   (fn case-try-step [how expr else pattern body ...]
     (if (= nil pattern body)
         expr
@@ -6195,7 +6195,7 @@ do
               ,pattern ,(case-try-step how body else ...)
               ,(unpack else)))
           ,expr)))
-  
+
   (fn case-try-impl [how expr pattern body ...]
     (let [clauses [pattern body ...]
           last (. clauses (length clauses))
@@ -6207,33 +6207,33 @@ do
       (assert (= 0 (math.fmod (length catch) 2))
               "expected every catch pattern to have a body")
       (case-try-step how expr catch (unpack clauses))))
-  
+
   (fn case-try* [expr pattern body ...]
     "Perform chained pattern matching for a sequence of steps which might fail.
-  
+
   The values from the initial expression are matched against the first pattern.
   If they match, the first body is evaluated and its values are matched against
   the second pattern, etc.
-  
+
   If there is a (catch pat1 body1 pat2 body2 ...) form at the end, any mismatch
   from the steps will be tried against these patterns in sequence as a fallback
   just like a normal match. If there is no catch, the mismatched values will be
   returned as the value of the entire expression."
     (case-try-impl `case expr pattern body ...))
-  
+
   (fn match-try* [expr pattern body ...]
     "Perform chained pattern matching for a sequence of steps which might fail.
-  
+
   The values from the initial expression are matched against the first pattern.
   If they match, the first body is evaluated and its values are matched against
   the second pattern, etc.
-  
+
   If there is a (catch pat1 body1 pat2 body2 ...) form at the end, any mismatch
   from the steps will be tried against these patterns in sequence as a fallback
   just like a normal match. If there is no catch, the mismatched values will be
   returned as the value of the entire expression."
     (case-try-impl `match expr pattern body ...))
-  
+
   {:case case*
    :case-try case-try*
    :match match*

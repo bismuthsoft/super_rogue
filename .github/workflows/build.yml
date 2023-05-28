@@ -1,0 +1,21 @@
+name: Build
+on: push
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    container:
+      image: registry.gitlab.com/winny/pre-commit-docker:latest
+      env:
+        PRE_COMMIT_HOME: .pre-commit-cache
+    steps:
+      - uses: actions/checkout@v3
+      - name: Allow workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Cache .pre-commit-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            .pre-commit-cache
+          key: ${{ runner.os }}-pre-commit-cache-${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: Run pre-commit
+        run: pre-commit run -a

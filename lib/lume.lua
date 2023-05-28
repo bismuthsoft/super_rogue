@@ -724,7 +724,7 @@ end
 local ripairs_iter = function(t, i)
   i = i - 1
   local v = t[i]
-  if v ~= nil then 
+  if v ~= nil then
     return i, v
   end
 end
