@@ -1,5 +1,5 @@
 (local pp #((. (require :lib.fennel) :view) $1))
-(local {: Vec2 : PolarVec2} (require :src.Vec))
+(local {: Vec2 : PolarVec2} (require :Vec))
 
 (local f {}) ;; game functions -- put into table so that hoisting is not needed
 (var s nil) ;; game state all contained in here

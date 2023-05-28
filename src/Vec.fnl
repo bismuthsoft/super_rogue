@@ -1,4 +1,4 @@
-(local class (require :src.class))
+(local class (require :class))
 
 (macro generate-operators! [Class fields]
   (var out [])

@@ -15,7 +15,7 @@ Install [LÖVE (love2d)][love2d].  Then run:
 
 ```bash
 # From the super-rogue/ directory...
-love .
+love src
 ```
 
 [love2d]: https://love2d.org/
