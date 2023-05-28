@@ -1,0 +1,30 @@
+name: Deploy
+on:
+  push:
+    branches:
+      - master
+jobs:
+  website:
+    needs:
+      - pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v20
+        with:
+          nix_path: channel:nixos-22.11
+      - name: Print nixpkgs version
+        run: nix-instantiate --eval -E '(import <nixpkgs> {}).lib.version'
+      - run: nix-env -i awscli -f '<nixpkgs>'
+      - uses: actions/setup-node@v2
+      - run: npm i -g love.js
+      - run: echo Super_Rogue | love.js src public -c
+      - run: find public
+      - run: |
+          env | grep -o "^AWS_[^=]*"
+          echo $AWS_ACCESS_KEY_ID | wc -c
+          echo $AWS_SECRET_ACCESS_KEY | wc -c
+          aws s3 sync --delete --acl public-read public/ s3://winny-super-rogue/
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_KEY }}
