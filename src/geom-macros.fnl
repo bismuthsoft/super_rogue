@@ -1,4 +1,4 @@
-(fn vec-op! [stride op ...]
+(fn vec-op [stride op ...]
   `(values
     ,(unpack
       (fcollect [i 1 stride]
@@ -7,9 +7,9 @@
            (icollect [_ v (ipairs [...])]
              `(. ,v ,i))))))))
 
-(fn vec2-op! [op ...]
+(fn vec2-op [op ...]
   `(values
     (,op ,(unpack (icollect [_ v (ipairs [...])] `(. ,v 1))))
     (,op ,(unpack (icollect [_ v (ipairs [...])] `(. ,v 2))))))
 
-{: vec-op! : vec2-op!}
+{: vec-op : vec2-op}
