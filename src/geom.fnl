@@ -33,11 +33,12 @@
 (fn geom.points->line [a b]
   ;; Given two points, each [x y], give the slope and intercept of a line that
   ;; goes thru both a and b.
-  (let [(dx dy) (vec2-op - b a)
+  (let [[x1 y1] a
+        (dx dy) (vec2-op - b a)
         slope (/ dy dx)
-        intercept (- (. a 2) (* slope (. a 1)))]
+        intercept (- y1 (* slope x1))]
     (if (= slope math.huge) ;; vertical line
-        (values math.huge (. a 2))
+        (values math.huge y1)
         (values slope intercept))))
 
 (fn geom.line-at-x [x line]
@@ -45,39 +46,44 @@
   (let [y (+ (* (. line 1)) (. line 2))]
     (values x y)))
 
-(fn geom.line-line-intersection [a b]
-  ;; Given two non-vertical lines, each [slope intercept], return the x and y
-  ;; intersection point, if it exists. Returns "parallel" if they are parallel
-  ;; and intersect.
+;; Intersection functions:
+;;  - A-B-intersection
+;;  - arg 1 is of type A, arg 2 is of type B
+;;  - returns x and y as two values if intersection exists, otherwise nil
+;;  - type "point" is [x y]
+;;  - type "line" is [slope intercept]
+;;  - type "lineseg" is [[x y] [x y]]
+;;  - type "polygon" is [[x y] [x y] ...]
+
+(fn geom.line-line-intersection [[x1 y1] [x2 y2]]
   (if
-   ;; parellel
-   (= (. a 1) (. b 1))
-   (if (geom.approx-eq (. a 2) (. b 2))
+   ;; parallel
+   (= x1 x2)
+   (if (geom.approx-eq y1 y2)
        (error "Attempt to find intersection of equal lines")
        false)
    ;; vertical (can't detect based on slope-intercept ...)
-   (= (. a 1) math.huge)
+   (= x1 math.huge)
    (error "Attempt to find intersection of vertical line")
    ;; standard
-   (let [x (/ (- (. b 2) (. a 2))
-              (- (. a 1) (. b 1)))
-         y (+ (. a 2) (* x (. a 1)))]
+   (let [x (/ (- y2 y1)
+              (- x1 x2))
+         y (+ y1 (* x x1))]
      (values x y))))
 
-(fn geom.point-lineseg-intersection [point [p1 p2]]
-  ;; Given a point, return the point if it is on top of the line segment.
+(fn geom.point-lineseg-intersection [point [[x1 y1] [x2 y2]]]
   (let [[x y] point
-        (slope intercept) (geom.points->line p1 p2)
+        (slope intercept) (geom.points->line [x1 y1] [x2 y2])
         distance (math.abs (+ (* slope x) intercept (- y)))]
     (if (= slope (/ 1 0))
         ;; vertical
-        (and (geom.approx-eq (. point 1) (. p1 1))
-             (< (. point 2) (math.max (. p1 2) (. p2 2)))
-             (> (. point 2) (math.min (. p1 2) (. p2 2)))
-             point)
+        (and (geom.approx-eq x x1)
+             (< (. point 2) (math.max y1 y2))
+             (> (. point 2) (math.min y1 y2))
+             (unpack point))
         ;; normal
         (and (geom.approx-eq distance 0)
-             point))))
+             (unpack point)))))
 
 (fn geom.lineseg-lineseg-intersection [[p1 p2] [q1 q2]]
   (let [line1 [(geom.points->line p1 p2)]
@@ -93,15 +99,13 @@
            (geom.point-lineseg-intersection isect-point [q1 q2]))
           (unpack isect-point)))))
 
-;; return true if something is roughly equal
-(fn geom.approx-eq [a b]
-  (> 0.00001 (math.abs (- a b))))
-
-(fn geom.nan? [x] (not= x x))
-
-(fn geom.vec-eq [a b]
-  (and (geom.approx-eq (. a 1) (. b 1))
-       (geom.approx-eq (. a 2) (. b 2))))
+;; (fn geom.lineseg-polygon-intersection [[p1 p2] polygon]
+;;   (faccumulate [intersection []
+;;                 i 1 (length polygon)
+;;                 &until (. intersection 1)]
+;;    (let [q1 (. polygon i)
+;;          q2 (. polygon (+ 1 (% i (length polygon))))]
+;;      [(geom.lineseg-lineseg-intersection [p1 p2] [q1 q2])])))
 
 (fn geom.polygon-contains? [point polygon]
   ;; count how many intersections exist when trying to "exit" polygon from point
@@ -120,13 +124,16 @@
     ;; if odd number of intersections, we are inside it!
     (= (% cross-count 2) 1)))
 
-;; (fn geom.lineseg-polygon-intersection [[p1 p2] polygon]
-;;   (faccumulate [intersection []
-;;                 i 1 (length polygon)
-;;                 &until (. intersection 1)]
-;;    (let [q1 (. polygon i)
-;;          q2 (. polygon (+ 1 (% i (length polygon))))]
-;;      [(geom.lineseg-lineseg-intersection [p1 p2] [q1 q2])])))
+;;
+;; return true if something is roughly equal
+(fn geom.approx-eq [a b]
+  (> 0.00001 (math.abs (- a b))))
+
+(fn geom.nan? [x] (not= x x))
+
+(fn geom.vec-eq [[x1 y1] [x2 y2]]
+  (and (geom.approx-eq x1 x2)
+       (geom.approx-eq y1 y2)))
 
 ;; basic tests
 (assert (geom.vec-eq [0 0] [(geom.points->line [0 0] [1 0])]))
