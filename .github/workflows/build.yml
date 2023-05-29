@@ -19,3 +19,32 @@ jobs:
           key: ${{ runner.os }}-pre-commit-cache-${{ hashFiles('.pre-commit-config.yaml') }}
       - name: Run pre-commit
         run: pre-commit run -a
+  website:
+    permissions:
+      pull-requests: write
+      contents: read
+    needs:
+      - pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v20
+        with:
+          nix_path: channel:nixos-22.11
+      - run: nix build
+      - run: nix-env -i awscli -f '<nixpkgs>'
+      - run: |
+          env | grep -o "^AWS_[^=]*"
+          echo $AWS_ACCESS_KEY_ID | wc -c
+          echo $AWS_SECRET_ACCESS_KEY | wc -c
+          src=$(nix eval --raw ".#super_rogue.web")
+          dest=s3://winny-super-rogue/${GITHUB_SHA}/
+          aws s3 sync --delete --acl public-read "$src" "$dest"
+          echo https://super-rogue.workinprogress.top/${GITHUB_SHA}/
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_KEY }}
+      - uses: mshick/add-pr-comment@v2
+        with:
+          message: |
+            Try the last deploy here: https://super-rogue.workinprogress.top/${{ github.sha }}/

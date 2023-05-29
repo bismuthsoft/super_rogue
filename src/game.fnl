@@ -1,5 +1,5 @@
 (local pp #((. (require :lib.fennel) :view) $1))
-(import-macros {: vec2-op!} :geom-macros)
+(import-macros {: vec2-op} :geom-macros)
 (local geom (require :geom))
 
 (local f {}) ;; game functions -- put into table so that hoisting is not needed
@@ -23,10 +23,10 @@
 
 ;; move a 'step' pixels towards b, return the result
 (fn f.step-towards [a b step]
-  (let [(dx dy) (vec2-op! - a b)
-        (angle distance) (geom.rectangular-to-polar dx dy)]
+  (let [(dx dy) (vec2-op - a b)
+        (angle distance) (geom.rectangular->polar dx dy)]
     (if (< distance step)
         ;; too close to goal -- just teleport to goal
         b
-        (let [step-vec [(geom.polar-to-rectangular angle step)]]
-          [(vec2-op! - a step-vec)]))))
+        (let [step-vec [(geom.polar->rectangular angle step)]]
+          [(vec2-op - a step-vec)]))))
