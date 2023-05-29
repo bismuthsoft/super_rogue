@@ -9,6 +9,14 @@ Inspired by [SUPERHOT][superhot].
 
 ## Playing
 
+### Online
+
+This project's default branch deploys to
+[super-rogue.workinprogress.top](https://super-rogue.workinprogress.top/).
+
+Each commit is deployed to its own public URL.  See comments in PRs or GitHub
+Actions transcripts for URLs.
+
 ### Run from source
 
 Install [LÖVE (love2d)][love2d].  Then run:
@@ -19,6 +27,15 @@ love src
 ```
 
 [love2d]: https://love2d.org/
+
+### Building web
+
+```bash
+nix build
+busybox httpd -f -h result -p 8080
+```
+
+Play on https://localhost:8080/
 
 ## Contributing
 
