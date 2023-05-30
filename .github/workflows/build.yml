@@ -28,6 +28,8 @@ jobs:
       - uses: cachix/install-nix-action@v20
         with:
           nix_path: channel:nixos-22.11
+      - run: nix build .#super_rogue.test # Separate out the noisy nix output
+                                          # from running tests.
       - run: nix run .#super_rogue.test
   website:
     permissions:
