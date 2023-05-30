@@ -74,16 +74,20 @@
 (fn geom.point-lineseg-intersection [point [[x1 y1] [x2 y2]]]
   (let [[x y] point
         (slope intercept) (geom.points->line [x1 y1] [x2 y2])
-        distance (math.abs (+ (* slope x) intercept (- y)))]
-    (if (= slope (/ 1 0))
-        ;; vertical
-        (and (geom.approx-eq x x1)
-             (< (. point 2) (math.max y1 y2))
-             (> (. point 2) (math.min y1 y2))
-             (unpack point))
-        ;; normal
-        (and (geom.approx-eq distance 0)
-             (unpack point)))))
+        distance (math.abs (+ (* slope x) intercept (- y)))
+        within-range (and
+                      (<= (. point 2) (math.max y1 y2))
+                      (>= (. point 2) (math.min y1 y2)))]
+    (if
+     ;; vertical
+     (= slope (/ 1 0))
+     (and (geom.approx-eq x x1)
+          within-range
+          (unpack point))
+     ;; standard
+     (and (geom.approx-eq distance 0)
+          within-range
+          (unpack point)))))
 
 (fn geom.lineseg-lineseg-intersection [[p1 p2] [q1 q2]]
   (let [line1 [(geom.points->line p1 p2)]
