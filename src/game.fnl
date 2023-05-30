@@ -1,4 +1,4 @@
-(local pp #((. (require :lib.fennel) :view) $1))
+(local pp #(print ((. (require :lib.fennel) :view) $1)))
 (import-macros {: vec2-op} :geom-macros)
 (local geom (require :geom))
 
