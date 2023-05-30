@@ -71,24 +71,14 @@
          y (+ y1 (* x x1))]
      (values x y))))
 
-(fn geom.point-lineseg-intersection [point [[x1 y1] [x2 y2]]]
-  (let [[x y] point
-        (slope intercept) (geom.points->line [x1 y1] [x2 y2])
-        distance (math.abs (+ (* slope x) intercept (- y)))
-        within-range (and
-                      (<= (. point 2) (math.max y1 y2))
-                      (>= (. point 2) (math.min y1 y2)))]
-    (if
-     ;; vertical
-     (= slope (/ 1 0))
-     (and (geom.approx-eq x x1)
-          within-range
-          (unpack point))
-     ;; standard
-     (and (geom.approx-eq distance 0)
-          within-range
-          (unpack point)))))
+(fn geom.point-lineseg-intersection [point [p1 p2]]
+  (if (geom.approx-eq
+       (+ (geom.distance (vec2-op - point p1))
+          (geom.distance (vec2-op - point p2)))
+       (geom.distance (vec2-op - p2 p1)))
+      point))
 
+(local DEBUG_LINESEG false)
 (fn geom.lineseg-lineseg-intersection [[p1 p2] [q1 q2]]
   (let [line1 [(geom.points->line p1 p2)]
         line2 [(geom.points->line q1 q2)]]
@@ -103,6 +93,7 @@
            (geom.point-lineseg-intersection isect-point [q1 q2]))
           (unpack isect-point)))))
 
+;; return the first face of the polygon that intersects
 (fn geom.lineseg-polygon-intersection [[p1 p2] polygon]
   (unpack
    (faccumulate [intersection []
@@ -112,24 +103,19 @@
           q2 (. polygon (+ 1 (% i (length polygon))))]
       [(geom.lineseg-lineseg-intersection [p1 p2] [q1 q2])]))))
 
-(fn geom.polygon-contains? [point polygon]
-  ;; count how many intersections exist when trying to "exit" polygon from point
-  (let [cross-count
-        (faccumulate [cross-count 0
-                      i 1 (length polygon)]
-         (let [p1 (. polygon i)
-               ;; wrap the index, because must close shape!
-               p2 (. polygon (+ 1 (% i (length polygon))))
-               ;; a line from the inside of the polygon, outwards
-               line2 [point [geom.FAR (. point 2)]]]
-           (+ cross-count
-              (if (geom.lineseg-lineseg-intersection [p1 p2] line2)
-                  1
-                  0))))]
-    ;; if odd number of intersections, we are inside it!
-    (= (% cross-count 2) 1)))
+(fn geom.point-in-polygon? [point polygon]
+ (let [cross-count
+       (faccumulate [cross-count 0
+                     i 1 (length polygon)]
+        (let [q1 (. polygon i)
+              q2 (. polygon (+ 1 (% i (length polygon))))
+              ray [point [geom.FAR (. point 2)]]]
+          (+ cross-count
+           (if (geom.lineseg-lineseg-intersection [q1 q2] ray)
+               1
+               0))))]
+   (= 1 (% cross-count 2))))
 
-;;
 ;; return true if something is roughly equal
 (fn geom.approx-eq [a b]
   (> 0.00001 (math.abs (- a b))))
