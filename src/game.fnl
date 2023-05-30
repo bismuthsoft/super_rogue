@@ -7,6 +7,7 @@
 
 (fn f.initial-state []
   {:player-pos [300 300]
+   :player-facing 0
    :player-moved-by 0
    :level-border (f.generate-map)})
 
@@ -16,17 +17,21 @@
 (fn f.update [s dt]
   (let [mouse-pos [(love.mouse.getPosition)]]
     (if (love.mouse.isDown 1)
-        (let [next-pos (f.step-towards s.player-pos mouse-pos (* dt 120))]
-         (if (geom.point-in-polygon? next-pos s.level-border)
-           (do
-            (set s.player-moved-by (geom.distance (vec2-op - next-pos s.player-pos)))
-            (set s.player-pos next-pos)))))))
+        (let [next-pos (f.step-vec-towards s.player-pos mouse-pos (* dt 120))
+              step-len [(vec2-op - next-pos s.player-pos)]]
+          (if (geom.point-in-polygon? next-pos s.level-border)
+              (do
+                (set s.player-moved-by (geom.distance (unpack step-len)))
+                (set s.player-pos next-pos)))))))
+
+(fn f.mousemoved [s x y]
+  (set s.player-facing (geom.angle (vec2-op - [x y] s.player-pos))))
 
 (fn f.draw [s]
   (love.graphics.setColor 1 1 1 1)
   (love.graphics.print s.player-moved-by 10 10)
   (f.draw-polygon s.level-border)
-  (f.draw-ray s.player-pos [0 100])
+  (f.draw-ray s.player-pos [s.player-facing 100])
 
   (love.graphics.print (collectgarbage :count))
   (love.graphics.print "@" (vec2-op - s.player-pos [5 10])))
@@ -43,7 +48,7 @@
    (vec2-op + [x y] [(geom.polar->rectangular angle len)])))
 
 ;; move a 'step' pixels towards b, return the result
-(fn f.step-towards [a b step]
+(fn f.step-vec-towards [a b step]
   (let [(dx dy) (vec2-op - a b)
         (angle distance) (geom.rectangular->polar dx dy)]
     (if (< distance step)
@@ -60,3 +65,4 @@
 (fn bind-love [name] (tset love name (partial (. f name) s)))
 (bind-love :update)
 (bind-love :draw)
+(bind-love :mousemoved)
