@@ -103,13 +103,15 @@
            (geom.point-lineseg-intersection isect-point [q1 q2]))
           (unpack isect-point)))))
 
-;; (fn geom.lineseg-polygon-intersection [[p1 p2] polygon]
-;;   (faccumulate [intersection []
-;;                 i 1 (length polygon)
-;;                 &until (. intersection 1)]
-;;    (let [q1 (. polygon i)
-;;          q2 (. polygon (+ 1 (% i (length polygon))))]
-;;      [(geom.lineseg-lineseg-intersection [p1 p2] [q1 q2])])))
+(fn geom.lineseg-polygon-intersection [[p1 p2] polygon]
+  (unpack
+   (faccumulate [intersection []
+                 i 1 (length polygon)
+                 &until (. intersection 1)]
+    (let [q1 (. polygon i)
+          q2 (. polygon (+ 1 (% i (length polygon))))]
+      (pp [p1 p2 q1 q2])
+      [(geom.lineseg-lineseg-intersection [p1 p2] [q1 q2])]))))
 
 (fn geom.polygon-contains? [point polygon]
   ;; count how many intersections exist when trying to "exit" polygon from point
@@ -158,7 +160,7 @@
 (assert (not (geom.line-line-intersection [0 0] [0 1]))) ;; parallel
 ;; (assert (geom.vec-eq [0 0]
 ;;                      [(geom.line-at-x [(/ 1 0) 0] [1 0])])) ;; vertical, expect error
-(assert (geom.vec-eq [0 0] [(geom.lineseg-lineseg-intersection ;; normal
+(assert (geom.vec-eq [0 0] [(geom.lineseg-lineseg-intersection ;; standard
                              [[-1 -1] [1 1]]
                              [[1 -1] [-1 1]])]))
 (assert (not (geom.lineseg-lineseg-intersection [[0 0] [1 0]] [[1 1] [2 1]]))) ;; parallel
@@ -171,6 +173,7 @@
 (assert (not (geom.polygon-contains? [0 2] test-square)))
 (assert (geom.polygon-contains? [0 0] test-square)) ;; in square
 (assert (geom.polygon-contains? [-2 0] test-square)) ;; behind square
-;(assert (geom.vec-eq [0 1] (geom.lineseg-polygon-intersection [[0 0] [2 2]] test-square)))
+(assert (not (geom.lineseg-polygon-intersection [[3 3] [2 2]] test-square)))
+(assert (geom.vec-eq [0 1] [(geom.lineseg-polygon-intersection [[0 0] [0 2]] test-square)]))
 
 geom
