@@ -51,3 +51,9 @@ commit` runs, the pre-commit hook will also run its checks.
 We use a standard GitHub Pull Request workflow.
 
 [pre-commit]: https://pre-commit.com/
+
+### Running tests
+
+```bash
+run run .#super_rogue.test
+```
