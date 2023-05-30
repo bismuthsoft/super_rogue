@@ -27,6 +27,15 @@
    (* r (math.cos theta))
    (* r (math.sin theta))))
 
+(fn geom.polygon [{: sides : origin : size : angle}]
+  (let [angle (or angle 0)]
+    (fcollect [i 1 sides]
+      [(vec2-op +
+                origin
+                [(geom.polar->rectangular
+                  (+ angle (* 2 math.pi (/ i sides)))
+                  size)])])))
+
 (fn geom.points->ray [a b]
   (values a (geom.angle (vec2-op - b a))))
 
