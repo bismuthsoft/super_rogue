@@ -110,7 +110,6 @@
                  &until (. intersection 1)]
     (let [q1 (. polygon i)
           q2 (. polygon (+ 1 (% i (length polygon))))]
-      (pp [p1 p2 q1 q2])
       [(geom.lineseg-lineseg-intersection [p1 p2] [q1 q2])]))))
 
 (fn geom.polygon-contains? [point polygon]
