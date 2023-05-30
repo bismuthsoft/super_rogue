@@ -104,17 +104,19 @@
       [(geom.lineseg-lineseg-intersection [p1 p2] [q1 q2])]))))
 
 (fn geom.point-in-polygon? [point polygon]
- (let [cross-count
-       (faccumulate [cross-count 0
-                     i 1 (length polygon)]
-        (let [q1 (. polygon i)
-              q2 (. polygon (+ 1 (% i (length polygon))))
-              ray [point [geom.FAR (. point 2)]]]
-          (+ cross-count
-           (if (geom.lineseg-lineseg-intersection [q1 q2] ray)
-               1
-               0))))]
-   (= 1 (% cross-count 2))))
+  (let [cross-count
+        (faccumulate [cross-count 0
+                      i 1 (length polygon)]
+         (let [q1 (. polygon i)
+               q2 (. polygon (+ 1 (% i (length polygon))))
+               ray [point [geom.FAR (. point 2)]]]
+           (let [isect-point [(geom.lineseg-lineseg-intersection [q1 q2] ray)]]
+             (+ cross-count
+                (if (and (. isect-point 1)
+                         (not (geom.vec-eq q1 isect-point)))
+                   1
+                   0)))))]
+    (= 1 (% cross-count 2))))
 
 ;; return true if something is roughly equal
 (fn geom.approx-eq [a b]
