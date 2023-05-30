@@ -57,6 +57,6 @@
 (fn love.load []
   (set s (f.initial-state)))
 
-(fn love.update [dt] (f.update s dt))
-
-(fn love.draw [] (f.draw s))
+(fn bind-love [name] (tset love name (partial (. f name) s)))
+(bind-love :update)
+(bind-love :draw)
