@@ -19,12 +19,24 @@ jobs:
           key: ${{ runner.os }}-pre-commit-cache-${{ hashFiles('.pre-commit-config.yaml') }}
       - name: Run pre-commit
         run: pre-commit run -a
+  test:
+    needs:
+      - pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v20
+        with:
+          nix_path: channel:nixos-22.11
+      - run: nix build .#super_rogue.test # Separate out the noisy nix output
+                                          # from running tests.
+      - run: nix run .#super_rogue.test
   website:
     permissions:
       pull-requests: write
       contents: read
     needs:
-      - pre-commit
+      - test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -37,7 +49,7 @@ jobs:
           env | grep -o "^AWS_[^=]*"
           echo $AWS_ACCESS_KEY_ID | wc -c
           echo $AWS_SECRET_ACCESS_KEY | wc -c
-          src=$(nix eval --raw ".#super_rogue.web")
+          src=$(nix eval --raw ".#super_rogue.web.src")
           dest=s3://winny-super-rogue/${GITHUB_SHA}/
           aws s3 sync --delete --acl public-read "$src" "$dest"
           echo https://super-rogue.workinprogress.top/${GITHUB_SHA}/

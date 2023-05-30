@@ -1,6 +1,7 @@
 (import-macros {: vec2-op} :geom-macros)
 (local geom (require :geom))
 (local util (require :util))
+(local lume (require :lib.lume))
 (local pp util.pp)
 
 (local f {}) ;; game functions -- put into table so that hoisting is not needed
@@ -88,6 +89,13 @@
 (var s nil) ;; game state all contained in here
 
 (fn love.load []
+  (table.remove arg 1)  ;; game directory or .love file
+  (while (> (length arg) 0)
+    (match (. arg 1)
+      "--test"
+      (let [tests (require :tests)]
+        (table.remove arg 1)
+        (tests.entrypoint))))
   (set s (f.initial-state)))
 
 (fn bind-love [name] (tset love name (partial (. f name) s)))
