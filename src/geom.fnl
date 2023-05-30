@@ -46,13 +46,13 @@
         (dx dy) (vec2-op - b a)
         slope (/ dy dx)
         intercept (- y1 (* slope x1))]
-    (if (= slope math.huge) ;; vertical line
+    (if (geom.is-infinite slope) ;; vertical line
         (values math.huge y1)
         (values slope intercept))))
 
-(fn geom.line-at-x [x line]
+(fn geom.line-at-x [[slope intercept] x]
   ;; Evalute line at x=x
-  (let [y (+ (* (. line 1)) (. line 2))]
+  (let [y (+ (* x slope) intercept)]
     (values x y)))
 
 ;; Intersection functions:
@@ -64,20 +64,20 @@
 ;;  - type "lineseg" is [[x y] [x y]]
 ;;  - type "polygon" is [[x y] [x y] ...]
 
-(fn geom.line-line-intersection [[x1 y1] [x2 y2]]
+(fn geom.line-line-intersection [[s1 y1] [s2 y2]]
   (if
    ;; parallel
-   (= x1 x2)
+   (= s1 s2)
    (if (geom.approx-eq y1 y2)
        (error "Attempt to find intersection of equal lines")
        false)
    ;; vertical (can't detect based on slope-intercept ...)
-   (= x1 math.huge)
+   (or (geom.is-infinite s1) (geom.is-infinite s2))
    (error "Attempt to find intersection of vertical line")
    ;; standard
    (let [x (/ (- y2 y1)
-              (- x1 x2))
-         y (+ y1 (* x x1))]
+              (- s1 s2))
+         y (+ y1 (* x s1))]
      (values x y))))
 
 (fn geom.point-lineseg-intersection [point [p1 p2]]
@@ -87,14 +87,19 @@
        (geom.distance (vec2-op - p2 p1)))
       point))
 
-(local DEBUG_LINESEG false)
 (fn geom.lineseg-lineseg-intersection [[p1 p2] [q1 q2]]
   (let [line1 [(geom.points->line p1 p2)]
-        line2 [(geom.points->line q1 q2)]]
+        line2 [(geom.points->line q1 q2)]
+        vertical2 (geom.is-infinite (. line2 1))]
     (let [isect-point
            (if
-            (= (. line1 1) (/ 1 0))
-            [(geom.line-at-x (. p1 1) line2)]
+            ;; vertical line1
+            (geom.is-infinite (. line1 1))
+            [(geom.line-at-x line2 (. p1 1))]
+            ;; vertical line2
+            (geom.is-infinite (. line2 1))
+            [(geom.line-at-x line1 (. p2 1))]
+            ;; normal
             [(geom.line-line-intersection line1 line2)])]
       (if (and
            (. isect-point 1)
@@ -137,6 +142,9 @@
   (and (geom.approx-eq x1 x2)
        (geom.approx-eq y1 y2)))
 
+(fn geom.is-infinite [x]
+  (or (> x geom.FAR) (< x (- geom.FAR))))
+
 ;; basic tests
 (assert (geom.vec-eq [0 0] [(geom.points->line [0 0] [1 0])]))
 (assert (geom.vec-eq [0 1] [(geom.points->line [0 1] [1 1])]))
@@ -161,14 +169,24 @@
                              [[1 -1] [-1 1]])]))
 (assert (not (geom.lineseg-lineseg-intersection [[0 0] [1 0]] [[1 1] [2 1]]))) ;; parallel
 (assert (not (geom.lineseg-lineseg-intersection [[1 -1] [1 1]] [[0 2] [geom.FAR 2]]))) ;; parallel
+(assert (geom.lineseg-lineseg-intersection [[250 600] [250 40]] [[100 350] [300 350]])) ;; this case seems problematic
 (assert (geom.vec-eq [0 1] [(geom.lineseg-lineseg-intersection ;; vertical
                              [[0 0] [0 2]]
                              [[-1 1] [1 1]])]))
 
 (local test-square [[-1 -1] [1 -1] [1 1] [-1 1]])
-(assert (not (geom.polygon-contains? [0 2] test-square)))
-(assert (geom.polygon-contains? [0 0] test-square)) ;; in square
-(assert (geom.polygon-contains? [-2 0] test-square)) ;; behind square
+(assert (not (geom.point-in-polygon? [0 2] test-square)))
+(assert (geom.point-in-polygon? [0 0] test-square)) ;; in square
+(assert (not (geom.point-in-polygon? [-2 0] test-square))) ;; behind square
+
+(local test-triangle
+       [[250 559.80762113533]
+        [250 40.192378864669]
+        [700 300]])
+
+(assert (geom.point-in-polygon? [338.1735945625 288.93990457787] test-triangle))
+(assert (not (geom.point-in-polygon? [100 350] test-triangle)))
+(assert (not (geom.point-in-polygon? [100 300] test-triangle)))
 (assert (not (geom.lineseg-polygon-intersection [[3 3] [2 2]] test-square)))
 (assert (geom.vec-eq [0 1] [(geom.lineseg-polygon-intersection [[0 0] [0 2]] test-square)]))
 
