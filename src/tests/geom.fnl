@@ -42,5 +42,29 @@
                     (geom.vec-eq [0 0]
                                  [(geom.line-at-x [(/ 1 0) 0] [1 0])]))))
 
+(fn TestGeom.test_in_polygon_with_square []
+  (local test-square [[-1 -1] [1 -1] [1 1] [-1 1]])
+  (lu.assertFalse (geom.point-in-polygon? [0 2] test-square))
+  (lu.assertTrue (geom.point-in-polygon? [0 0] test-square)) ; in square
+  (lu.assertFalse (geom.point-in-polygon? [-2 0] test-square))) ; behind square
+
+(fn TestGeom.test_in_polygon_with_triange []
+  (local test-triangle
+         [[250 559.80762113533]
+          [250 40.192378864669]
+          [700 300]])
+  (lu.assertTrue (geom.point-in-polygon? [338.1735945625 288.93990457787] test-triangle))
+  (lu.assertFalse (geom.point-in-polygon? [100 350] test-triangle))
+  (lu.assertFalse (geom.point-in-polygon? [100 300] test-triangle)))
+
+(fn TestGeom.test_lineseq_in_polygon []
+  (local test-square [[-1 -1] [1 -1] [1 1] [-1 1]])
+  (local test-triangle
+         [[250 559.80762113533]
+          [250 40.192378864669]
+          [700 300]])
+  (lu.assertEvalToFalse (geom.lineseg-polygon-intersection [[3 3] [2 2]] test-square))
+  (lu.assertTrue (geom.vec-eq [0 1] [(geom.lineseg-polygon-intersection [[0 0] [0 2]] test-square)])))
+
 (set _G.TestGeom TestGeom)
 TestGeom

@@ -145,20 +145,4 @@
 (fn geom.is-infinite [x]
   (or (> x geom.FAR) (< x (- geom.FAR))))
 
-(local test-square [[-1 -1] [1 -1] [1 1] [-1 1]])
-(assert (not (geom.point-in-polygon? [0 2] test-square)))
-(assert (geom.point-in-polygon? [0 0] test-square)) ;; in square
-(assert (not (geom.point-in-polygon? [-2 0] test-square))) ;; behind square
-
-(local test-triangle
-       [[250 559.80762113533]
-        [250 40.192378864669]
-        [700 300]])
-
-(assert (geom.point-in-polygon? [338.1735945625 288.93990457787] test-triangle))
-(assert (not (geom.point-in-polygon? [100 350] test-triangle)))
-(assert (not (geom.point-in-polygon? [100 300] test-triangle)))
-(assert (not (geom.lineseg-polygon-intersection [[3 3] [2 2]] test-square)))
-(assert (geom.vec-eq [0 1] [(geom.lineseg-polygon-intersection [[0 0] [0 2]] test-square)]))
-
 geom
