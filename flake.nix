@@ -30,8 +30,8 @@
           maintainers = with maintainers; [ winny ];
         };
       };
-    web = pkgs.stdenv.mkDerivation {
-      pname = "super_rogue";
+    web_src = pkgs.stdenv.mkDerivation {
+      pname = "super_rogue (web)";
       version = "0.0.1";
       src = ./.;
       buildInputs = [ love_js ];
@@ -42,14 +42,23 @@
         cp -r public/ $out/
       '';
     };
+    love_src = pkgs.copyPathToStore ./src;
+    desktop = pkgs.writeShellScriptBin "super_rogue" ''
+      exec ${pkgs.love}/bin/love ${love_src}
+    '';
   in {
     packages.x86_64-linux.love_js = love_js;
 
     super_rogue = {
-      inherit web;
+      inherit desktop;
+      web.src = web_src;
+      web.serve = pkgs.writeShellScriptBin "super_rogue" ''
+        echo Visit https://localhost:8080/
+        exec ${pkgs.busybox}/bin/busybox httpd -f -h ${web_src} -v -p 8080
+      '';
     };
 
-    packages.x86_64-linux.default = web;
+    packages.x86_64-linux.default = web_src;
 
   };
 }
