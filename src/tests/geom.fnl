@@ -38,8 +38,9 @@
 ;; basic tests
 (fn TestGeom.test_line_at_x []
   ;; vertical, expect error
-  (lu.assertTrue (geom.vec-eq [0 0]
-                              [(geom.line-at-x [(/ 1 0) 0] [1 0])])))
+  (lu.assertError (lambda []
+                    (geom.vec-eq [0 0]
+                                 [(geom.line-at-x [(/ 1 0) 0] [1 0])]))))
 
 (set _G.TestGeom TestGeom)
 TestGeom
