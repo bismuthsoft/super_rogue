@@ -1,25 +1,46 @@
-(local pp #(print ((. (require :lib.fennel) :view) $1)))
 (import-macros {: vec2-op} :geom-macros)
 (local geom (require :geom))
+(local util (require :util))
+(local pp util.pp)
 
 (local f {}) ;; game functions -- put into table so that hoisting is not needed
-(var s nil) ;; game state all contained in here
+
+(fn f.initial-state []
+  {:player-pos [300 300]
+   :player-moved-by 0
+   :level-border (f.generate-map)})
 
 (fn f.generate-map []
-  {:player-pos [300 300]})
+  (geom.polygon {:sides 3 :origin [400 300] :size 300}))
 
-(fn love.load []
-  (set s (f.generate-map)))
-
-(fn love.update [dt]
+(fn f.update [s dt]
   (let [mouse-pos [(love.mouse.getPosition)]]
     (if (love.mouse.isDown 1)
-        (set s.player-pos
-             (f.step-towards s.player-pos mouse-pos 2)))))
+        (let [next-pos (f.step-towards s.player-pos mouse-pos (* dt 120))]
+         (if (geom.point-in-polygon? next-pos s.level-border)
+           (do
+            (set s.player-moved-by (geom.distance (vec2-op - next-pos s.player-pos)))
+            (set s.player-pos next-pos)))))))
 
-(fn love.draw []
+(fn f.draw [s]
+  (love.graphics.setColor 1 1 1 1)
+  (love.graphics.print s.player-moved-by 10 10)
+  (f.draw-polygon s.level-border)
+  (f.draw-ray s.player-pos [0 100])
+
   (love.graphics.print (collectgarbage :count))
-  (love.graphics.print "@" (unpack s.player-pos)))
+  (love.graphics.print "@" (vec2-op - s.player-pos [5 10])))
+
+(fn f.fill-circle [[x y] size]
+  (love.graphics.circle "fill" x y size size))
+
+(fn f.draw-polygon [polygon]
+  (love.graphics.polygon "line" (unpack (util.flatten polygon))))
+
+(fn f.draw-ray [[x y] [angle len]]
+  (love.graphics.line
+   x y
+   (vec2-op + [x y] [(geom.polar->rectangular angle len)])))
 
 ;; move a 'step' pixels towards b, return the result
 (fn f.step-towards [a b step]
@@ -30,3 +51,12 @@
         b
         (let [step-vec [(geom.polar->rectangular angle step)]]
           [(vec2-op - a step-vec)]))))
+
+(var s {}) ;; game state all contained in here
+
+(fn love.load []
+  (set s (f.initial-state)))
+
+(fn love.update [dt] (f.update s dt))
+
+(fn love.draw [] (f.draw s))
