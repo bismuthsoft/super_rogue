@@ -27,6 +27,15 @@
    (* r (math.cos theta))
    (* r (math.sin theta))))
 
+(fn geom.polygon [{: sides : origin : size : angle}]
+  (let [angle (or angle 0)]
+    (fcollect [i 1 sides]
+      [(vec2-op +
+                origin
+                [(geom.polar->rectangular
+                  (+ angle (* 2 math.pi (/ i sides)))
+                  size)])])))
+
 (fn geom.points->ray [a b]
   (values a (geom.angle (vec2-op - b a))))
 
@@ -37,13 +46,13 @@
         (dx dy) (vec2-op - b a)
         slope (/ dy dx)
         intercept (- y1 (* slope x1))]
-    (if (= slope math.huge) ;; vertical line
+    (if (geom.is-infinite slope) ;; vertical line
         (values math.huge y1)
         (values slope intercept))))
 
-(fn geom.line-at-x [x line]
+(fn geom.line-at-x [[slope intercept] x]
   ;; Evalute line at x=x
-  (let [y (+ (* (. line 1)) (. line 2))]
+  (let [y (+ (* x slope) intercept)]
     (values x y)))
 
 ;; Intersection functions:
@@ -55,47 +64,42 @@
 ;;  - type "lineseg" is [[x y] [x y]]
 ;;  - type "polygon" is [[x y] [x y] ...]
 
-(fn geom.line-line-intersection [[x1 y1] [x2 y2]]
+(fn geom.line-line-intersection [[s1 y1] [s2 y2]]
   (if
    ;; parallel
-   (= x1 x2)
+   (= s1 s2)
    (if (geom.approx-eq y1 y2)
        (error "Attempt to find intersection of equal lines")
        false)
    ;; vertical (can't detect based on slope-intercept ...)
-   (= x1 math.huge)
+   (or (geom.is-infinite s1) (geom.is-infinite s2))
    (error "Attempt to find intersection of vertical line")
    ;; standard
    (let [x (/ (- y2 y1)
-              (- x1 x2))
-         y (+ y1 (* x x1))]
+              (- s1 s2))
+         y (+ y1 (* x s1))]
      (values x y))))
 
-(fn geom.point-lineseg-intersection [point [[x1 y1] [x2 y2]]]
-  (let [[x y] point
-        (slope intercept) (geom.points->line [x1 y1] [x2 y2])
-        distance (math.abs (+ (* slope x) intercept (- y)))
-        within-range (and
-                      (<= (. point 2) (math.max y1 y2))
-                      (>= (. point 2) (math.min y1 y2)))]
-    (if
-     ;; vertical
-     (= slope (/ 1 0))
-     (and (geom.approx-eq x x1)
-          within-range
-          (unpack point))
-     ;; standard
-     (and (geom.approx-eq distance 0)
-          within-range
-          (unpack point)))))
+(fn geom.point-lineseg-intersection [point [p1 p2]]
+  (if (geom.approx-eq
+       (+ (geom.distance (vec2-op - point p1))
+          (geom.distance (vec2-op - point p2)))
+       (geom.distance (vec2-op - p2 p1)))
+      point))
 
 (fn geom.lineseg-lineseg-intersection [[p1 p2] [q1 q2]]
   (let [line1 [(geom.points->line p1 p2)]
-        line2 [(geom.points->line q1 q2)]]
+        line2 [(geom.points->line q1 q2)]
+        vertical2 (geom.is-infinite (. line2 1))]
     (let [isect-point
            (if
-            (= (. line1 1) (/ 1 0))
-            [(geom.line-at-x (. p1 1) line2)]
+            ;; vertical line1
+            (geom.is-infinite (. line1 1))
+            [(geom.line-at-x line2 (. p1 1))]
+            ;; vertical line2
+            (geom.is-infinite (. line2 1))
+            [(geom.line-at-x line1 (. p2 1))]
+            ;; normal
             [(geom.line-line-intersection line1 line2)])]
       (if (and
            (. isect-point 1)
@@ -103,6 +107,7 @@
            (geom.point-lineseg-intersection isect-point [q1 q2]))
           (unpack isect-point)))))
 
+;; return the first face of the polygon that intersects
 (fn geom.lineseg-polygon-intersection [[p1 p2] polygon]
   (unpack
    (faccumulate [intersection []
@@ -110,27 +115,23 @@
                  &until (. intersection 1)]
     (let [q1 (. polygon i)
           q2 (. polygon (+ 1 (% i (length polygon))))]
-      (pp [p1 p2 q1 q2])
       [(geom.lineseg-lineseg-intersection [p1 p2] [q1 q2])]))))
 
-(fn geom.polygon-contains? [point polygon]
-  ;; count how many intersections exist when trying to "exit" polygon from point
+(fn geom.point-in-polygon? [point polygon]
   (let [cross-count
         (faccumulate [cross-count 0
                       i 1 (length polygon)]
-         (let [p1 (. polygon i)
-               ;; wrap the index, because must close shape!
-               p2 (. polygon (+ 1 (% i (length polygon))))
-               ;; a line from the inside of the polygon, outwards
-               line2 [point [geom.FAR (. point 2)]]]
-           (+ cross-count
-              (if (geom.lineseg-lineseg-intersection [p1 p2] line2)
-                  1
-                  0))))]
-    ;; if odd number of intersections, we are inside it!
-    (= (% cross-count 2) 1)))
+         (let [q1 (. polygon i)
+               q2 (. polygon (+ 1 (% i (length polygon))))
+               ray [point [geom.FAR (. point 2)]]]
+           (let [isect-point [(geom.lineseg-lineseg-intersection [q1 q2] ray)]]
+             (+ cross-count
+                (if (and (. isect-point 1)
+                         (not (geom.vec-eq q1 isect-point)))
+                   1
+                   0)))))]
+    (= 1 (% cross-count 2))))
 
-;;
 ;; return true if something is roughly equal
 (fn geom.approx-eq [a b]
   (> 0.00001 (math.abs (- a b))))
@@ -140,6 +141,9 @@
 (fn geom.vec-eq [[x1 y1] [x2 y2]]
   (and (geom.approx-eq x1 x2)
        (geom.approx-eq y1 y2)))
+
+(fn geom.is-infinite [x]
+  (or (> x geom.FAR) (< x (- geom.FAR))))
 
 ;; basic tests
 (assert (geom.vec-eq [0 0] [(geom.points->line [0 0] [1 0])]))
@@ -165,14 +169,24 @@
                              [[1 -1] [-1 1]])]))
 (assert (not (geom.lineseg-lineseg-intersection [[0 0] [1 0]] [[1 1] [2 1]]))) ;; parallel
 (assert (not (geom.lineseg-lineseg-intersection [[1 -1] [1 1]] [[0 2] [geom.FAR 2]]))) ;; parallel
+(assert (geom.lineseg-lineseg-intersection [[250 600] [250 40]] [[100 350] [300 350]])) ;; this case seems problematic
 (assert (geom.vec-eq [0 1] [(geom.lineseg-lineseg-intersection ;; vertical
                              [[0 0] [0 2]]
                              [[-1 1] [1 1]])]))
 
 (local test-square [[-1 -1] [1 -1] [1 1] [-1 1]])
-(assert (not (geom.polygon-contains? [0 2] test-square)))
-(assert (geom.polygon-contains? [0 0] test-square)) ;; in square
-(assert (geom.polygon-contains? [-2 0] test-square)) ;; behind square
+(assert (not (geom.point-in-polygon? [0 2] test-square)))
+(assert (geom.point-in-polygon? [0 0] test-square)) ;; in square
+(assert (not (geom.point-in-polygon? [-2 0] test-square))) ;; behind square
+
+(local test-triangle
+       [[250 559.80762113533]
+        [250 40.192378864669]
+        [700 300]])
+
+(assert (geom.point-in-polygon? [338.1735945625 288.93990457787] test-triangle))
+(assert (not (geom.point-in-polygon? [100 350] test-triangle)))
+(assert (not (geom.point-in-polygon? [100 300] test-triangle)))
 (assert (not (geom.lineseg-polygon-intersection [[3 3] [2 2]] test-square)))
 (assert (geom.vec-eq [0 1] [(geom.lineseg-polygon-intersection [[0 0] [0 2]] test-square)]))
 
