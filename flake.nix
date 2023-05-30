@@ -44,13 +44,19 @@
     };
     love_src = pkgs.copyPathToStore ./src;
     desktop = pkgs.writeShellScriptBin "super_rogue" ''
-      exec ${pkgs.love}/bin/love ${love_src}
+      cd ${love_src}
+      exec ${pkgs.love}/bin/love .
+    '';
+    test = pkgs.writeShellScriptBin "super_rogue-test" ''
+      cd ${love_src}
+      exec ${pkgs.love}/bin/love . --test --headless
     '';
   in {
     packages.x86_64-linux.love_js = love_js;
 
     super_rogue = {
       inherit desktop;
+      inherit test;
       web.src = web_src;
       web.serve = pkgs.writeShellScriptBin "super_rogue" ''
         echo Visit https://localhost:8080/

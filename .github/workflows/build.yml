@@ -19,12 +19,22 @@ jobs:
           key: ${{ runner.os }}-pre-commit-cache-${{ hashFiles('.pre-commit-config.yaml') }}
       - name: Run pre-commit
         run: pre-commit run -a
+  test:
+    needs:
+      - pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v20
+        with:
+          nix_path: channel:nixos-22.11
+      - run: nix run .#super_rogue.test
   website:
     permissions:
       pull-requests: write
       contents: read
     needs:
-      - pre-commit
+      - test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

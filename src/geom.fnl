@@ -145,35 +145,6 @@
 (fn geom.is-infinite [x]
   (or (> x geom.FAR) (< x (- geom.FAR))))
 
-;; basic tests
-(assert (geom.vec-eq [0 0] [(geom.points->line [0 0] [1 0])]))
-(assert (geom.vec-eq [0 1] [(geom.points->line [0 1] [1 1])]))
-(assert (geom.vec-eq [1 1] [(geom.points->line [0 1] [1 2])]))
-(assert (geom.vec-eq [1 2] [1 2]))
-(assert (geom.vec-eq [1 2] [1 2.00000000001]))
-(assert (not (geom.vec-eq [1 2] [1 1])))
-(assert (geom.point-lineseg-intersection [0 0] [[0 0] [3 3]]))
-(assert (geom.point-lineseg-intersection [1.5 1.5] [[0 0] [3 3]]))
-(assert (geom.point-lineseg-intersection [-1.5 -1.5] [[0 0] [-3 -3]]))
-(assert (geom.point-lineseg-intersection [3 3] [[0 0] [3 3]]))
-(assert (not (geom.point-lineseg-intersection [1 2] [[1 -1] [1 1]]))) ;; vertical (out of range)
-(assert (geom.point-lineseg-intersection [0 0.5] [[0 0] [0 1]])) ;; vertical (in range)
-(assert (not (geom.point-lineseg-intersection [3 4] [[0 0] [3 3]])))
-(assert (geom.vec-eq [0 0] [(geom.line-line-intersection [0 0] [1 0])]))
-(assert (geom.vec-eq [0 1] [(geom.line-line-intersection [-1 1] [1 1])]))
-(assert (not (geom.line-line-intersection [0 0] [0 1]))) ;; parallel
-;; (assert (geom.vec-eq [0 0]
-;;                      [(geom.line-at-x [(/ 1 0) 0] [1 0])])) ;; vertical, expect error
-(assert (geom.vec-eq [0 0] [(geom.lineseg-lineseg-intersection ;; standard
-                             [[-1 -1] [1 1]]
-                             [[1 -1] [-1 1]])]))
-(assert (not (geom.lineseg-lineseg-intersection [[0 0] [1 0]] [[1 1] [2 1]]))) ;; parallel
-(assert (not (geom.lineseg-lineseg-intersection [[1 -1] [1 1]] [[0 2] [geom.FAR 2]]))) ;; parallel
-(assert (geom.lineseg-lineseg-intersection [[250 600] [250 40]] [[100 350] [300 350]])) ;; this case seems problematic
-(assert (geom.vec-eq [0 1] [(geom.lineseg-lineseg-intersection ;; vertical
-                             [[0 0] [0 2]]
-                             [[-1 1] [1 1]])]))
-
 (local test-square [[-1 -1] [1 -1] [1 1] [-1 1]])
 (assert (not (geom.point-in-polygon? [0 2] test-square)))
 (assert (geom.point-in-polygon? [0 0] test-square)) ;; in square
