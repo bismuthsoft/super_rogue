@@ -79,8 +79,8 @@
 (fn dungeon.draw-polygon [polygon]
   (love.graphics.polygon "line" (unpack (util.flatten polygon))))
 
-;; move a 'step' pixels towards b, return the result
 (fn dungeon.step-vec-towards [a b step]
+  ;; move a 'step' pixels towards b, return the result
   (let [(dx dy) (vec2-op - a b)
         (angle distance) (geom.rectangular->polar dx dy)]
     (if (< distance step)
