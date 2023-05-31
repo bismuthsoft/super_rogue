@@ -1,6 +1,4 @@
 (local draw {})
-(local FILL "fill")
-(local LINE "line")
 
 (macro with-graphics-context [body ...]
   '(do
@@ -9,10 +7,10 @@
        (love.graphics.pop)
        out#)))
 
-(fn draw.progress [rectangle percent color]
+(fn draw.progress [[[x y] [w h]] percent color]
   (with-graphics-context
-    (love.graphics.setColor (unpack color))
-    (love.graphics.rectangle LINE rectangle.x rectangle.y rectangle.width rectangle.height)
-    (love.graphics.rectangle FILL rectangle.x rectangle.y (math.floor (* rectangle.width percent)) rectangle.height)))
+    (love.graphics.setColor color)
+    (love.graphics.rectangle :line x y w h)
+    (love.graphics.rectangle :fill x y (* w percent) h)))
 
 draw

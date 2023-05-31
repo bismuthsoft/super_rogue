@@ -46,7 +46,7 @@
         (dx dy) (vec2-op - b a)
         slope (/ dy dx)
         intercept (- y1 (* slope x1))]
-    (if (geom.is-infinite slope) ;; vertical line
+    (if (geom.infinite? slope) ;; vertical line
         (values math.huge y1)
         (values slope intercept))))
 
@@ -72,7 +72,7 @@
        (error "Attempt to find intersection of equal lines")
        false)
    ;; vertical (can't detect based on slope-intercept ...)
-   (or (geom.is-infinite s1) (geom.is-infinite s2))
+   (or (geom.infinite? s1) (geom.infinite? s2))
    (error "Attempt to find intersection of vertical line")
    ;; standard
    (let [x (/ (- y2 y1)
@@ -90,15 +90,15 @@
 (fn geom.lineseg-lineseg-intersection [[p1 p2] [q1 q2]]
   (let [line1 [(geom.points->line p1 p2)]
         line2 [(geom.points->line q1 q2)]
-        vertical2 (geom.is-infinite (. line2 1))]
+        vertical2 (geom.infinite? (. line2 1))]
     (let [isect-point
            (if
             ;; vertical line1
-            (geom.is-infinite (. line1 1))
+            (geom.infinite? (. line1 1))
             [(geom.line-at-x line2 (. p1 1))]
             ;; vertical line2
-            (geom.is-infinite (. line2 1))
-            [(geom.line-at-x line1 (. p2 1))]
+            (geom.infinite? (. line2 1))
+            [(geom.line-at-x line1 (. q1 1))]
             ;; normal
             [(geom.line-line-intersection line1 line2)])]
       (if (and
@@ -134,7 +134,7 @@
 
 ;; return true if something is roughly equal
 (fn geom.approx-eq [a b]
-  (> 0.00001 (math.abs (- a b))))
+  (> (* (math.max a b) (^ 2 -30)) (math.abs (- a b))))
 
 (fn geom.nan? [x] (not= x x))
 
@@ -142,7 +142,7 @@
   (and (geom.approx-eq x1 x2)
        (geom.approx-eq y1 y2)))
 
-(fn geom.is-infinite [x]
-  (or (> x geom.FAR) (< x (- geom.FAR))))
+(fn geom.infinite? [x]
+  (or (>= x geom.FAR) (<= x (- geom.FAR))))
 
 geom
