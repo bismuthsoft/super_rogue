@@ -167,7 +167,6 @@
            (let [speed (* s.player.speed dt (if shifted? 0.3 1))
                  offset [(geom.polar->rectangular angle speed)]
                  next-pos [(vec2-op + offset s.player.pos)]]
-             (set s.player.will-move-to next-pos)
              (if (geom.point-in-polygon? next-pos s.level-border)
                  (dungeon.move-player-to s next-pos)))))))
 
