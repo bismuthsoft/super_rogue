@@ -2,6 +2,9 @@
 
 (set util.pp #(print ((. (require :lib.fennel) :view) $1)))
 
+(fn util.zero? [v]
+  (= 0 v))
+
 (fn util.flatten [array]
   (let [out []
         flatten (fn flatten [value]

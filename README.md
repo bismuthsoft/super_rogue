@@ -57,3 +57,12 @@ We use a standard GitHub Pull Request workflow.
 ```bash
 run run .#super_rogue.test
 ```
+
+
+### Restart game on code change
+
+To run tests and run the desktop version of the game upon code change, try this commad.
+
+```
+find src | entr -r sh -c 'nix run .#super_rogue.test && nix run .#super_rogue.desktop'
+```
