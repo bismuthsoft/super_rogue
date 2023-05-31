@@ -1,13 +1,14 @@
-(var scene-fns {}) ;; scene functions
-(var scene-state {}) ;; scene state
+(var scene-fns {})                      ; scene functions
+(var scene-state {})                    ; scene state
 
 (fn set-scene [scene-name ...]
-  (when (?. scene-fns :deinit) (scene-fns.deinit scene-state))
-  (set scene-fns (require scene-name))
+  (match (?. scene-fns :deinit)
+    (where deinit) (deinit scene-state))
+  (set scene-fns (require (.. "scenes." scene-name)))
   (set scene-state (scene-fns.init ...)))
 
 (fn love.load []
-  (table.remove arg 1)  ;; game directory or .love file
+  (table.remove arg 1)                  ; game directory or .love file
   (while (> (length arg) 0)
     (match (. arg 1)
       "--test"
@@ -22,10 +23,11 @@
 
 (set-scene :dungeon)
 
-(fn bind-love [name] (tset love name
-                           (fn [...]
-                             (when (. scene-fns name)
-                               ((. scene-fns name) scene-state ...)))))
+(fn bind-love [name]
+  (tset love name
+        (fn [...]
+          (match (. scene-fns name)
+            (where callback) (callback scene-state ...)))))
 (bind-love :update)
 (bind-love :draw)
 (bind-love :mousemoved)
