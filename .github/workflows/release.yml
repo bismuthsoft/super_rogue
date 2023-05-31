@@ -11,7 +11,7 @@ jobs:
   website:
     runs-on: ubuntu-latest
     steps:
-      # - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - uses: cachix/install-nix-action@v20
         with:
           nix_path: channel:nixos-22.11
