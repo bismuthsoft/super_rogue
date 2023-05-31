@@ -121,6 +121,20 @@
   (if (< (geom.distance (vec2-op - point origin)) radius)
     (point)))
 
+(fn geom.circle-at-x [x [[ox oy] r]]
+  ;; given a circle origin ox, oy, radius r, evaluate it at x. Returns either
+  ;; zero, one, or two points.
+  (let [discriminant (- (^ r 2) (^ (- x ox) 2))]
+    (if
+     (< discriminant 0)
+     nil
+     (= discriminant 0)
+     [x oy]
+     (> discriminant 0)
+     (let [sqrt-discriminant (^ discriminant 0.5)]
+       (values [x (+ oy sqrt-discriminant)]
+               [x (- oy sqrt-discriminant)])))))
+
 (fn geom.point-in-polygon? [point polygon]
   (let [cross-count
         (faccumulate [cross-count 0
