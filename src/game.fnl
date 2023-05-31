@@ -3,7 +3,7 @@
 
 (fn set-scene [scene-name ...]
   (match (?. scene-fns :deinit)
-    (where deinit) (deinit scene-state))
+    deinit (deinit scene-state))
   (set scene-fns (require (.. "scenes." scene-name)))
   (set scene-state (scene-fns.init ...)))
 
@@ -27,7 +27,7 @@
   (tset love name
         (fn [...]
           (match (. scene-fns name)
-            (where callback) (callback scene-state ...)))))
+            callback (callback scene-state ...)))))
 (bind-love :update)
 (bind-love :draw)
 (bind-love :mousemoved)
