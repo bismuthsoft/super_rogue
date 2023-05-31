@@ -47,12 +47,14 @@
       cd ${love_src}
       exec ${pkgs.love}/bin/love .
     '';
+    # Probably better way to do this?
     test = pkgs.writeShellScriptBin "super_rogue-test" ''
       cd ${love_src}
       exec ${pkgs.love}/bin/love . --test --headless
     '';
   in {
     packages.x86_64-linux.love_js = love_js;
+    ci.s5cmd = pkgs.s5cmd;
 
     super_rogue = {
       inherit desktop;

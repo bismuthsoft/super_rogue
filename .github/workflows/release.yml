@@ -20,14 +20,13 @@ jobs:
         with:
           name: bismuthsoft
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-      - run: nix-env -i s5cmd -f '<nixpkgs>'
       - run: |
           env | grep -o "^AWS_[^=]*"
           echo $AWS_ACCESS_KEY_ID | wc -c
           echo $AWS_SECRET_ACCESS_KEY | wc -c
           src=s3://winny-super-rogue/${GITHUB_SHA}/
           dest=s3://winny-super-rogue/
-          s5cmd sync --acl public-read "$src" "$dest"
+          nix run .#ci.s5cmd sync --acl public-read "$src" "$dest"
           echo https://super-rogue.workinprogress.top/
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY }}
