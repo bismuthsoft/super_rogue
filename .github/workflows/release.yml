@@ -24,7 +24,7 @@ jobs:
           env | grep -o "^AWS_[^=]*"
           echo $AWS_ACCESS_KEY_ID | wc -c
           echo $AWS_SECRET_ACCESS_KEY | wc -c
-          src=s3://winny-super-rogue/${GITHUB_SHA}/
+          src="s3://winny-super-rogue/${GITHUB_SHA}/*"
           dest=s3://winny-super-rogue/
           nix run .#ci.s5cmd -- sync --acl public-read "$src" "$dest"
           echo https://super-rogue.workinprogress.top/
