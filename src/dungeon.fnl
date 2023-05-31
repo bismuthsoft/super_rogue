@@ -16,18 +16,16 @@
          :time-rate 10}]
    (dungeon.add-actor state
     {:kind :player
-     :color [1 1 0.5]
+     :color [1 1 1]
      :char "@"
      :pos [300 300]
      :angle 0
-     :moved-by 0
-     :move-speed 120
-     :turn-speed 10
+     :speed 150
      :hp 3
      :max-hp 4
      :stamina 5
      :max-stamina 10
-     :stamina-regen-rate 0.05
+     :stamina-regen-rate 5
      :bullet-stamina-cost 8
      :meters {:health
               {:pos [20 560]
@@ -47,12 +45,12 @@
 
 (fn dungeon.update [s dt]
   (dungeon.update-player s dt)
-  (dungeon.update-actors s s.delta-time)
-  (set s.delta-time 0))
+  (when (> s.delta-time 0)
+    (dungeon.update-actors s s.delta-time)
+    (set s.delta-time 0)))
 
 (fn dungeon.draw [s]
   (love.graphics.setColor 1 1 1 1)
-  (love.graphics.print s.player.moved-by 10 10)
   (dungeon.draw-polygon s.level-border)
   (dungeon.draw-actors s))
 
@@ -66,23 +64,20 @@
                           :pos s.player.pos
                           :color [1 0 0]
                           :angle s.player.angle
-                          :speed 2})))
+                          :speed 300})))
 
 (fn dungeon.generate-map []
   (geom.polygon {:sides 3 :origin [400 300] :size 300}))
 
 (fn dungeon.move-player-to [s newpos]
   (set s.delta-time (+ s.delta-time
-                       (geom.distance (vec2-op - newpos s.player.pos))))
+                       (/
+                        (geom.distance (vec2-op - newpos s.player.pos))
+                        s.player.speed)))
   (set s.player.pos newpos))
 
 (fn dungeon.draw-polygon [polygon]
   (love.graphics.polygon "line" (unpack (util.flatten polygon))))
-
-(fn dungeon.draw-ray [[x y] [angle len]]
-  (love.graphics.line
-   x y
-   (vec2-op + [x y] [(geom.polar->rectangular angle len)])))
 
 ;; move a 'step' pixels towards b, return the result
 (fn dungeon.step-vec-towards [a b step]
@@ -147,11 +142,11 @@
      :player
      (do
        (love.graphics.setColor 1 1 0.5)
-       (dungeon.draw-ray actor.pos [actor.angle 100]))
+       (draw.ray actor.pos [actor.angle 100] 1 [1 1 1 0.25]))
      :bullet
      (do
-       (love.graphics.setColor actor.color)
-       (dungeon.draw-ray actor.pos [actor.angle (* 10 actor.speed)])))))
+       (draw.ray actor.pos [actor.angle (/ actor.speed 30)]
+                 3 actor.color)))))
 
 (fn dungeon.update-player [s dt]
   ;; keyboard input
@@ -169,10 +164,8 @@
                 pos))
           (angle distance) (geom.rectangular->polar (unpack offset))]
       (when (> distance 0)
-           (let [move-speed (* s.player.move-speed dt (if shifted? 10 1))
-                 offset [(geom.polar->rectangular
-                          angle
-                          (* s.player.move-speed dt))]
+           (let [speed (* s.player.speed dt (if shifted? 0.3 1))
+                 offset [(geom.polar->rectangular angle speed)]
                  next-pos [(vec2-op + offset s.player.pos)]]
              (set s.player.will-move-to next-pos)
              (if (geom.point-in-polygon? next-pos s.level-border)

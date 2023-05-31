@@ -1,4 +1,6 @@
 (local draw {})
+(local geom (require :geom))
+(import-macros {: vec2-op} :geom-macros)
 
 (macro with-graphics-context [body ...]
   '(do
@@ -12,5 +14,12 @@
     (love.graphics.setColor color)
     (love.graphics.rectangle :line x y w h)
     (love.graphics.rectangle :fill x y (* w percent) h)))
+
+(fn draw.ray [[x y] [angle len] thickness color]
+  (let [(x2 y2) (vec2-op + [x y] [(geom.polar->rectangular angle len)])]
+   (with-graphics-context
+     (love.graphics.setColor color)
+     (love.graphics.setLineWidth thickness)
+     (love.graphics.line x y x2 y2))))
 
 draw
