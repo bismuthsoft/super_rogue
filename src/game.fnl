@@ -1,6 +1,7 @@
 (import-macros {: vec2-op} :geom-macros)
 (local geom (require :geom))
 (local util (require :util))
+(local draw (require :draw))
 (local lume (require :lib.lume))
 (local pp util.pp)
 
@@ -11,13 +12,23 @@
             :facing 0
             :moved-by 0
             :move-speed 120
-            :turn-speed 10}
-   :level-border (f.generate-map)})
+            :turn-speed 10
+            :max-hp 4
+            :hp 3
+            :max-stamina 10
+            :stamina 5}
+   :level-border (f.generate-map)
+   :time 0})
 
 (fn f.generate-map []
   (geom.polygon {:sides 3 :origin [400 300] :size 300}))
 
 (fn f.update [s dt]
+  (local last-time s.time)
+  (set s.time (+ s.time dt))
+  ;; Attempt to regenerate stamina over time.
+  (when (and (util.zero? (% (math.floor s.time) 2)) (not (util.zero? (% (math.floor last-time) 2))))
+    (set s.player.stamina (math.floor s.player.max-stamina (+ s.player.stamina 1))))
   ;; keyboard input
   (let [shifted? (or (love.keyboard.isDown :lshift) (love.keyboard.isDown :rshift))
         key-offsets {:a [-1 0]
@@ -62,6 +73,13 @@
   (f.draw-polygon s.level-border)
   (f.draw-ray s.player.pos [s.player.facing 100])
 
+  (draw.progress {:y 560 :x 20 :width 100 :height 20}
+                 (/ s.player.hp s.player.max-hp)
+                 [.9 0 0 1])
+  (draw.progress {:y 560 :x 140 :width 100 :height 20}
+                 (/ s.player.stamina s.player.max-stamina)
+                 [0 .7 0 1])
+
   (love.graphics.print (collectgarbage :count))
   (love.graphics.print "@" (vec2-op - s.player.pos [5 10])))
 
@@ -95,7 +113,11 @@
       "--test"
       (let [tests (require :tests)]
         (table.remove arg 1)
-        (tests.entrypoint))))
+        (tests.entrypoint))
+      unknown
+      (do
+        (print (.. "Unknown argument: \"" unknown "\".  Ignoring."))
+        (table.remove arg 1))))
   (set s (f.initial-state)))
 
 (fn bind-love [name] (tset love name (partial (. f name) s)))
