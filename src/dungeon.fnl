@@ -1,8 +1,10 @@
+(import-macros {: vec2-op} :geom-macros)
 (local geom (require :geom))
 (local util (require :util))
+(local draw (require :draw))
 (local lume (require :lib.lume))
 (local pp util.pp)
-(import-macros {: vec2-op} :geom-macros)
+
 (local dungeon {})
 
 (fn dungeon.init []
@@ -20,7 +22,27 @@
      :angle 0
      :moved-by 0
      :move-speed 120
-     :turn-speed 10})
+     :turn-speed 10
+     :hp 3
+     :max-hp 4
+     :stamina 5
+     :max-stamina 10
+     :stamina-regen-rate 0.05
+     :bullet-stamina-cost 8
+     :meters {:health
+              {:pos [20 560]
+               :size [100 20]
+               :follow false
+               :value-field :hp
+               :max-field :max-hp
+               :color [.9 0 0 1]}
+              :stamina
+              {:pos [140 560]
+               :size [100 20]
+               :follow false
+               :value-field :stamina
+               :max-field :max-stamina
+               :color [0 .7 0 1]}}})
    state))
 
 (fn dungeon.update [s dt]
@@ -38,11 +60,13 @@
   (set s.player.angle (geom.angle (vec2-op - [x y] s.player.pos))))
 
 (fn dungeon.mousepressed [s x y button]
-  (dungeon.add-actor s {:kind :bullet
-                        :pos s.player.pos
-                        :color [1 0 0]
-                        :angle s.player.angle
-                        :speed 2}))
+  (when (> s.player.stamina s.player.bullet-stamina-cost)
+    (set s.player.stamina (- s.player.stamina s.player.bullet-stamina-cost))
+    (dungeon.add-actor s {:kind :bullet
+                          :pos s.player.pos
+                          :color [1 0 0]
+                          :angle s.player.angle
+                          :speed 2})))
 
 (fn dungeon.generate-map []
   (geom.polygon {:sides 3 :origin [400 300] :size 300}))
@@ -86,6 +110,12 @@
 (fn dungeon.update-actors [s dt]
   (each [i {: kind &as actor} (ipairs s.actors)]
     (case kind
+      :player
+      (do
+        (set s.player.stamina
+             (math.min
+              s.player.max-stamina
+              (+ s.player.stamina (* dt s.player.stamina-regen-rate)))))
       :bullet
       (do
         (let [step [(geom.polar->rectangular
@@ -108,6 +138,11 @@
     (when actor.char
       (love.graphics.setColor actor.color)
       (love.graphics.print actor.char (vec2-op - actor.pos [5 10])))
+    (when actor.meters
+      (each [_ meter (pairs actor.meters)]
+        (let [value (. actor meter.value-field)
+              max (. actor meter.max-field)]
+          (draw.progress [meter.pos meter.size] (/ value max) meter.color))))
     (case kind
      :player
      (do

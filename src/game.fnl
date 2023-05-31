@@ -13,14 +13,19 @@
       "--test"
       (let [tests (require :tests)]
         (table.remove arg 1)
-        (tests.entrypoint))))
+        (tests.entrypoint))
+      unknown
+      (do
+        (print (.. "Unknown argument: \"" unknown "\".  Ignoring."))
+        (table.remove arg 1))))
   (set-scene :dungeon))
+
+(set-scene :dungeon)
 
 (fn bind-love [name] (tset love name
                            (fn [...]
                              (when (. scene-fns name)
                                ((. scene-fns name) scene-state ...)))))
-
 (bind-love :update)
 (bind-love :draw)
 (bind-love :mousemoved)
