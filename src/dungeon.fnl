@@ -8,38 +8,49 @@
 (fn dungeon.init []
   (let [state
         {:level-border (dungeon.generate-map)
-         :actors []}]
-    (set state.player
-         (dungeon.add-actor state
-          {:type :player
-           :pos [300 300]
-           :facing 0
-           :moved-by 0
-           :move-speed 120
-           :turn-speed 10}))
-    state))
+         :actors []
+         :will-delete []
+         :delta-time 0
+         :time-rate 10}]
+   (dungeon.add-actor state
+    {:kind :player
+     :color [1 1 0.5]
+     :char "@"
+     :pos [300 300]
+     :angle 0
+     :moved-by 0
+     :move-speed 120
+     :turn-speed 10})
+   state))
 
 (fn dungeon.update [s dt]
-  (dungeon.update-actors s dt))
+  (dungeon.update-player s dt)
+  (dungeon.update-actors s s.delta-time)
+  (set s.delta-time 0))
 
 (fn dungeon.draw [s]
   (love.graphics.setColor 1 1 1 1)
   (love.graphics.print s.player.moved-by 10 10)
   (dungeon.draw-polygon s.level-border)
-  (dungeon.draw-ray s.player.pos [s.player.facing 100])
-
-  (love.graphics.print (collectgarbage :count))
-  (love.graphics.print "@" (vec2-op - s.player.pos [5 10])))
+  (dungeon.draw-actors s))
 
 (fn dungeon.mousemoved [s x y]
-  (set s.player.facing (geom.angle (vec2-op - [x y] s.player.pos))))
+  (set s.player.angle (geom.angle (vec2-op - [x y] s.player.pos))))
+
+(fn dungeon.mousepressed [s x y button]
+  (dungeon.add-actor s {:kind :bullet
+                        :pos s.player.pos
+                        :color [1 0 0]
+                        :angle s.player.angle
+                        :speed 2}))
 
 (fn dungeon.generate-map []
   (geom.polygon {:sides 3 :origin [400 300] :size 300}))
 
-(fn dungeon.move-player-to [player newpos]
-  (set player.moved-by (geom.distance (vec2-op - newpos player.pos)))
-  (set player.pos newpos))
+(fn dungeon.move-player-to [s newpos]
+  (set s.delta-time (+ s.delta-time
+                       (geom.distance (vec2-op - newpos s.player.pos))))
+  (set s.player.pos newpos))
 
 (fn dungeon.draw-polygon [polygon]
   (love.graphics.polygon "line" (unpack (util.flatten polygon))))
@@ -59,18 +70,55 @@
         (let [step-vec [(geom.polar->rectangular angle step)]]
           [(vec2-op - a step-vec)]))))
 
-(fn dungeon.add-projectile [s {: pos : angle : speed &as props}]
-  (dungeon.add-actor s (lume.merge {:type :player-bullet} props)))
-
-(fn dungeon.add-actor [s {: type &as props}]
+(fn dungeon.add-actor [s {: kind &as props}]
   (table.insert s.actors props)
+  (if
+   (= kind :player)
+   (do
+    (when s.player
+      (error "Attempt to add second player"))
+    (set s.player props)))
   props)
 
-(fn dungeon.update-actors [s dt]
-  (each [i {: type &as actor} (ipairs s.actors)]
-    (if (= type :player) (dungeon.update-player s actor dt))))
+(fn dungeon.delete-actor-index [s i]
+  (tset s.will-delete i true))
 
-(fn dungeon.update-player [s player dt]
+(fn dungeon.update-actors [s dt]
+  (each [i {: kind &as actor} (ipairs s.actors)]
+    (case kind
+      :bullet
+      (do
+        (let [step [(geom.polar->rectangular
+                     actor.angle
+                     (* dt actor.speed))]
+              next-pos [(vec2-op + actor.pos step)]
+              collision-point [(geom.lineseg-polygon-intersection
+                                [actor.pos next-pos]
+                                s.level-border)]]
+          (set actor.pos next-pos)
+          (if (. collision-point 1)
+              (dungeon.delete-actor-index s i))))))
+  (set s.actors
+       (icollect [i actor (ipairs s.actors)]
+         (if (. s.will-delete i) nil actor)))
+  (set s.will-delete []))
+
+(fn dungeon.draw-actors [s]
+  (each [i {: kind &as actor} (ipairs s.actors)]
+    (when actor.char
+      (love.graphics.setColor actor.color)
+      (love.graphics.print actor.char (vec2-op - actor.pos [5 10])))
+    (case kind
+     :player
+     (do
+       (love.graphics.setColor 1 1 0.5)
+       (dungeon.draw-ray actor.pos [actor.angle 100]))
+     :bullet
+     (do
+       (love.graphics.setColor actor.color)
+       (dungeon.draw-ray actor.pos [actor.angle (* 10 actor.speed)])))))
+
+(fn dungeon.update-player [s dt]
   ;; keyboard input
   (let [shifted? (or (love.keyboard.isDown :lshift) (love.keyboard.isDown :rshift))
         key-offsets {:a [-1 0] :h [-1 0] :left [-1 0]
@@ -86,13 +134,13 @@
                 pos))
           (angle distance) (geom.rectangular->polar (unpack offset))]
       (when (> distance 0)
-           (let [move-speed (* player.move-speed dt (if shifted? 10 1))
+           (let [move-speed (* s.player.move-speed dt (if shifted? 10 1))
                  offset [(geom.polar->rectangular
                           angle
-                          (* player.move-speed dt))]
-                 next-pos [(vec2-op + offset player.pos)]]
-             (set player.will-move-to next-pos)
+                          (* s.player.move-speed dt))]
+                 next-pos [(vec2-op + offset s.player.pos)]]
+             (set s.player.will-move-to next-pos)
              (if (geom.point-in-polygon? next-pos s.level-border)
-                 (dungeon.move-player-to player next-pos)))))))
+                 (dungeon.move-player-to s next-pos)))))))
 
 dungeon
