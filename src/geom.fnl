@@ -119,7 +119,7 @@
 
 (fn geom.point-circle-intersection [point [origin radius]]
   (if (< (geom.distance (vec2-op - point origin)) radius)
-    (point)))
+    point))
 
 (fn geom.circle-at-x [x [[ox oy] r]]
   ;; given a circle origin ox, oy, radius r, evaluate it at x. Returns either
@@ -134,6 +134,15 @@
      (let [sqrt-discriminant (^ discriminant 0.5)]
        (values [x (+ oy sqrt-discriminant)]
                [x (- oy sqrt-discriminant)])))))
+
+(fn geom.line-circle-intersection [[slope icept] [[cx cy] r]]
+  ;; given a circle origin ox, oy, radius r, evaluate it at a given line.
+  ;; Returns either zero, one, or two points.
+  (if
+   ;; vertical
+   (geom.infinite? slope)
+   (error "Attempt to find circle intersection with vertical line")))
+   ;; standard
 
 (fn geom.point-in-polygon? [point polygon]
   (let [cross-count
