@@ -28,6 +28,11 @@ jobs:
       - uses: cachix/install-nix-action@v20
         with:
           nix_path: channel:nixos-22.11
+      - uses: cachix/cachix-action@v12
+        with:
+          name: bismuthsoft
+          # If you chose API tokens for write access OR if you have a private cache
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - run: nix build .#super_rogue.test # Separate out the noisy nix output
                                           # from running tests.
       - run: nix run .#super_rogue.test
@@ -43,6 +48,11 @@ jobs:
       - uses: cachix/install-nix-action@v20
         with:
           nix_path: channel:nixos-22.11
+      - uses: cachix/cachix-action@v12
+        with:
+          name: bismuthsoft
+          # If you chose API tokens for write access OR if you have a private cache
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - run: nix build
       - run: nix-env -i awscli -f '<nixpkgs>'
       - run: |
