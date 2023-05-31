@@ -48,7 +48,6 @@
   (lu.assertEvalToFalse (geom.lineseg-lineseg-intersection [[0 0] [1 0]] [[1 1] [2 1]]))
   (lu.assertEvalToFalse (geom.lineseg-lineseg-intersection [[1 -1] [1 1]] [[0 2] [geom.FAR 2]])))
 
-;; basic tests
 (fn TestGeom.test_line_at_x []
   ;; vertical, expect error
   (lu.assertError (lambda []
@@ -79,6 +78,13 @@
   (lu.assertEvalToFalse (geom.lineseg-polygon-intersection [[3 3] [2 2]] test-square))
   (lu.assertEquals [(geom.lineseg-polygon-intersection [[0 0] [0 2]] test-square)] [0 1])
   (lu.assertEquals [(geom.lineseg-polygon-intersection [[350 350] [0 350]] test-triangle)] [250 350]))
+
+(fn TestGeom.circle-intersection []
+  (lu.assertEvalToTrue (geom.point-circle-intersection [[0 0] [[0 0] 1]]))
+  (lu.assertEvalToTrue (geom.point-circle-intersection [[0 0] [[1 1] 2]]))
+  (lu.assertEvalToTrue (geom.point-circle-intersection [[5 5] [[0 0] 10]]))
+  (lu.assertEvalToFalse (geom.point-circle-intersection [[5 5] [[0 0] 4]]))
+  (lu.assertEvalToFalse (geom.point-circle-intersection [[0 0] [[5 5] 4]])))
 
 (set _G.TestGeom TestGeom)
 TestGeom

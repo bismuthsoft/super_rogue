@@ -117,6 +117,10 @@
           q2 (. polygon (+ 1 (% i (length polygon))))]
       [(geom.lineseg-lineseg-intersection [p1 p2] [q1 q2])]))))
 
+(fn geom.point-circle-intersection [point [origin radius]]
+  (if (< (geom.distance (vec2-op - point origin)) radius)
+    (point)))
+
 (fn geom.point-in-polygon? [point polygon]
   (let [cross-count
         (faccumulate [cross-count 0
