@@ -26,7 +26,6 @@
 
 (fn dungeon.draw [s]
   (love.graphics.setColor 1 1 1 1)
-  (love.graphics.print s.player.moved-by 10 10)
   (dungeon.draw-polygon s.level-border)
   (dungeon.draw-actors s))
 
@@ -75,7 +74,6 @@
         :color [1 1 1]
         :char "@"
         :angle 0
-        :moved-by 0
         :move-speed 120
         :turn-speed 10
         :hp 3
