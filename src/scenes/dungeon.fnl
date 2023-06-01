@@ -66,7 +66,7 @@
    (case kind
      :player
      (let [pos ...]
-       {:kind :player
+       {: kind
         : pos
         :friendly? true
         :color [1 1 1]
@@ -97,18 +97,18 @@
      :bullet
      (let [(pos angle friendly?) ...]
         {: kind
-         :friendly? true
-         :pos s.player.pos
+         : friendly?
+         : pos
+         : angle
          :color [1 0 0]
-         :angle s.player.angle
          :atk 5
          :speed 2})
      :killer-tomato
      (let [pos ...]
        {: kind
+        : pos
         :color [1 0 0]
         :char "t"
-        : pos
         :hp 3
         :max-hp 3
         :atk 0.1
