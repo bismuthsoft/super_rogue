@@ -7,5 +7,4 @@
    (require :tests.geom)
    (set debug.traceback fennel.traceback)
    (local runner (lu.LuaUnit.new))
-   (love.event.quit (runner:runSuite)))
- }
+   (love.event.quit (runner:runSuite)))}

@@ -6,8 +6,10 @@
 (fn mapgen.generate-level [level]
   (values
    (geom.polygon {:sides 3 :origin [400 300] :size 300})
-   [
-    [:player [250 300]]
-    [:killer-tomato [300 300]]]))
+   [[:player [260 300]]
+    [:killer-tomato [500 300]]
+    [:grid-bug [400 400]]
+    [:grid-bug [400 350]]
+    [:grid-bug [400 250]]]))
 
 mapgen
