@@ -2,73 +2,31 @@
 (local geom (require :geom))
 (local util (require :util))
 (local draw (require :draw))
+(local mapgen (require :mapgen))
 (local lume (require :lib.lume))
 (local pp util.pp)
 
 (local dungeon {})
 
 (fn dungeon.init []
-  (let [state
-        {:level-border (dungeon.generate-map)
-         :actors []
-         :will-delete {}
-         :delta-time 0
-         :time-rate 10}]
-   (dungeon.add-actor
-    state
-    {:kind :player
-     :color [1 1 1]
-     :char "@"
-     :pos [300 300]
-     :angle 0
-     :moved-by 0
-     :move-speed 120
-     :turn-speed 10
-     :hp 3
-     :max-hp 4
-     :stamina 5
-     :max-stamina 10
-     :stamina-regen-rate 0.05
-     :bullet-stamina-cost 8
-     :hitbox {:size 8}
-     :meters {:health
-              {:pos [20 560]
-               :size [100 20]
-               :value-field :hp
-               :max-field :max-hp
-               :color [.9 0 0 1]}
-              :stamina
-              {:pos [140 560]
-               :size [100 20]
-               :follow false
-               :value-field :stamina
-               :max-field :max-stamina
-               :color [0 .7 0 1]}}})
-   (dungeon.add-actor
-    state
-    {:kind :turret
-     :color [0 1 0]
-     :char "t"
-     :pos [300 500]
-     :hp 3
-     :max-hp 3
-     :hitbox {:size 8}
-     :meters {:health
-              {:pos :follow
-               :size [20 5]
-               :value-field :hp
-               :max-field :max-hp
-               :color [.9 0 0 1]}}})
-   state))
+  (let [(polygon actors) (mapgen.generate-level 1)
+        state {:actors []
+               :level-border polygon
+               :will-delete {}
+               :delta-time 0
+               :time-rate 10}]
+    (each [_ args (ipairs actors)]
+      (dungeon.spawn-actor state (unpack args)))
+    state))
 
 (fn dungeon.update [s dt]
   (dungeon.update-player s dt)
-  (dungeon.update-actors s s.delta-time)
-  (set s.delta-time 0))
+  (when (> s.delta-time 0)
+    (dungeon.update-actors s s.delta-time)
+    (set s.delta-time 0)))
 
 (fn dungeon.draw [s]
   (love.graphics.setColor 1 1 1 1)
-  (love.graphics.print s.player.moved-by 10 10)
   (dungeon.draw-polygon s.level-border)
   (dungeon.draw-actors s))
 
@@ -78,16 +36,7 @@
 (fn dungeon.mousepressed [s x y button]
   (when (> s.player.stamina s.player.bullet-stamina-cost)
     (set s.player.stamina (- s.player.stamina s.player.bullet-stamina-cost))
-    (dungeon.add-actor s {:kind :bullet
-                          :friendly? true
-                          :pos s.player.pos
-                          :color [1 0 0]
-                          :angle s.player.angle
-                          :atk 5
-                          :speed 2})))
-
-(fn dungeon.generate-map []
-  (geom.polygon {:sides 3 :origin [400 300] :size 300}))
+    (dungeon.spawn-actor s :bullet s.player.pos s.player.angle true)))
 
 (fn dungeon.move-player-to [s newpos]
   (set s.delta-time (+ s.delta-time
@@ -112,7 +61,68 @@
         (let [step-vec [(geom.polar->rectangular angle step)]]
           [(vec2-op - a step-vec)]))))
 
-(fn dungeon.add-actor [s {: kind &as props}]
+(fn dungeon.spawn-actor [s kind ...]
+  (dungeon.insert-actor s
+   (case kind
+     :player
+     (let [pos ...]
+       {: kind
+        : pos
+        :friendly? true
+        :color [1 1 1]
+        :char "@"
+        :angle 0
+        :move-speed 120
+        :turn-speed 10
+        :hp 3
+        :max-hp 4
+        :stamina 5
+        :max-stamina 10
+        :stamina-regen-rate 0.05
+        :bullet-stamina-cost 8
+        :hitbox {:size 8}
+        :meters {:health
+                 {:pos [20 560]
+                  :size [100 20]
+                  :value-field :hp
+                  :max-field :max-hp
+                  :color [.9 0 0 1]}
+                 :stamina
+                 {:pos [140 560]
+                  :size [100 20]
+                  :follow false
+                  :value-field :stamina
+                  :max-field :max-stamina
+                  :color [0 .7 0 1]}}})
+     :bullet
+     (let [(pos angle friendly?) ...]
+        {: kind
+         : friendly?
+         : pos
+         : angle
+         :color [1 0 0]
+         :atk 5
+         :speed 2})
+     :killer-tomato
+     (let [pos ...]
+       {: kind
+        : pos
+        :color [1 0 0]
+        :char "t"
+        :hp 3
+        :max-hp 3
+        :atk 0.1
+        :hitbox {:size 8}
+        :meters {:health
+                 {:pos :follow
+                  :size [20 5]
+                  :value-field :hp
+                  :max-field :max-hp
+                  :color [.9 0 0 1]}}})
+     _
+     (error (.. "Unknown Actor kind" kind)))))
+
+(fn dungeon.insert-actor [s {: kind &as props}]
   (table.insert s.actors props)
   (if
    (= kind :player)
@@ -148,12 +158,20 @@
               (dungeon.delete-actor s actor))
           (each [_ other (ipairs s.actors)]
             (when (and other.hitbox
-                       (not= actor.friendly? (= other s.player))
+                       (not= actor.friendly? other.friendly?)
                        (geom.lineseg-in-circle? movement-lineseg
                                                 [other.pos other.hitbox.size]))
                 (dungeon.damage-actor s other actor.atk)
                 (dungeon.delete-actor s actor)))
-          (set actor.pos next-pos)))))
+          (set actor.pos next-pos)))
+      :killer-tomato
+      (do
+        (each [_ other (ipairs s.actors)]
+          (when (and other.hitbox
+                     (not= actor.friendly? other.friendly?)
+                     (geom.circle-in-circle? [actor.pos actor.hitbox.size]
+                                             [other.pos other.hitbox.size]))
+            (dungeon.damage-actor s other (* actor.atk dt)))))))
   (set s.actors
        (icollect [i actor (ipairs s.actors)]
          (if (. s.will-delete actor) nil actor)))
@@ -202,10 +220,10 @@
                 pos))
           (angle distance) (geom.rectangular->polar (unpack offset))]
       (when (> distance 0)
-           (let [move-speed (* s.player.move-speed dt (if shifted? 10 1))
+           (let [move-speed (* s.player.move-speed dt (if shifted? 0.2 1))
                  offset [(geom.polar->rectangular
                           angle
-                          (* s.player.move-speed dt))]
+                          move-speed)]
                  next-pos [(vec2-op + offset s.player.pos)]]
              (set s.player.will-move-to next-pos)
              (if (geom.point-in-polygon? next-pos s.level-border)
