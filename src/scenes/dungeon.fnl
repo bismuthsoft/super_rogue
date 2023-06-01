@@ -42,6 +42,13 @@
 (fn dungeon.mousemoved [s x y]
   (set s.player.angle (geom.angle (vec2-op - [x y] s.player.pos))))
 
+(fn dungeon.keypressed [s keycode scancode]
+  ;; DEBUG
+  (when (= scancode :f5)
+      (tset package.loaded :mapgen nil)
+      (set mapgen (require :mapgen))
+      (dungeon.next-level s)))
+
 (fn dungeon.mousepressed [s x y button]
   (when (> s.player.stamina s.player.bullet-stamina-cost)
     (set s.player.stamina (- s.player.stamina s.player.bullet-stamina-cost))
