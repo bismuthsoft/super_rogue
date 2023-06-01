@@ -34,8 +34,6 @@
     ((. (require :tests) :entrypoint)))) ; Get the tests entrypoint and call
                                          ; it.
 
-(set-scene :dungeon)
-
 (fn bind-love [name]
   (tset love name
         (fn [...]
