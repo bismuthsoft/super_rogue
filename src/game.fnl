@@ -8,18 +8,31 @@
   (set scene-state (scene-fns.init ...)))
 
 (fn love.load []
+  ;; Command line parsing
+  (var mode :game)
   (table.remove arg 1)                  ; game directory or .love file
   (while (> (length arg) 0)
     (match (. arg 1)
       "--test"
-      (let [tests (require :tests)]
+      (do
+        (set mode :test)
         (table.remove arg 1)
-        (tests.entrypoint))
+        (lua "break"))
       unknown
       (do
         (print (.. "Unknown argument: \"" unknown "\".  Ignoring."))
         (table.remove arg 1))))
-  (set-scene :dungeon))
+
+  (match mode
+    :game
+    (do
+      (when (or (not love.graphics) (not love.window))
+        (error "super_rogue cannot run with --headless.  Please remove this flag and try again."))
+      (love.graphics.setFont (love.graphics.newFont "lib/CourierPrime-Bold.ttf" 18))
+      (set-scene :dungeon))
+    :test
+    ((. (require :tests) :entrypoint)))) ; Get the tests entrypoint and call
+                                         ; it.
 
 (set-scene :dungeon)
 

@@ -11,12 +11,13 @@
   (let [state
         {:level-border (dungeon.generate-map)
          :actors []
-         :will-delete []
+         :will-delete {}
          :delta-time 0
          :time-rate 10}]
-   (dungeon.add-actor state
+   (dungeon.add-actor
+    state
     {:kind :player
-     :color [1 1 0.5]
+     :color [1 1 1]
      :char "@"
      :pos [300 300]
      :angle 0
@@ -29,10 +30,10 @@
      :max-stamina 10
      :stamina-regen-rate 0.05
      :bullet-stamina-cost 8
+     :hitbox {:size 8}
      :meters {:health
               {:pos [20 560]
                :size [100 20]
-               :follow false
                :value-field :hp
                :max-field :max-hp
                :color [.9 0 0 1]}
@@ -43,6 +44,21 @@
                :value-field :stamina
                :max-field :max-stamina
                :color [0 .7 0 1]}}})
+   (dungeon.add-actor
+    state
+    {:kind :turret
+     :color [0 1 0]
+     :char "t"
+     :pos [300 500]
+     :hp 3
+     :max-hp 3
+     :hitbox {:size 8}
+     :meters {:health
+              {:pos :follow
+               :size [20 5]
+               :value-field :hp
+               :max-field :max-hp
+               :color [.9 0 0 1]}}})
    state))
 
 (fn dungeon.update [s dt]
@@ -63,9 +79,11 @@
   (when (> s.player.stamina s.player.bullet-stamina-cost)
     (set s.player.stamina (- s.player.stamina s.player.bullet-stamina-cost))
     (dungeon.add-actor s {:kind :bullet
+                          :friendly? true
                           :pos s.player.pos
                           :color [1 0 0]
                           :angle s.player.angle
+                          :atk 5
                           :speed 2})))
 
 (fn dungeon.generate-map []
@@ -104,8 +122,8 @@
     (set s.player props)))
   props)
 
-(fn dungeon.delete-actor-index [s i]
-  (tset s.will-delete i true))
+(fn dungeon.delete-actor [s actor]
+  (tset s.will-delete actor true))
 
 (fn dungeon.update-actors [s dt]
   (each [i {: kind &as actor} (ipairs s.actors)]
@@ -122,31 +140,46 @@
                      actor.angle
                      (* dt actor.speed))]
               next-pos [(vec2-op + actor.pos step)]
+              movement-lineseg [actor.pos next-pos]
               collision-point [(geom.lineseg-polygon-intersection
-                                [actor.pos next-pos]
+                                movement-lineseg
                                 s.level-border)]]
-          (set actor.pos next-pos)
-          (if (. collision-point 1)
-              (dungeon.delete-actor-index s i))))))
+          (when (. collision-point 1)
+              (dungeon.delete-actor s actor))
+          (each [_ other (ipairs s.actors)]
+            (when (and other.hitbox
+                       (not= actor.friendly? (= other s.player))
+                       (geom.lineseg-in-circle? movement-lineseg
+                                                [other.pos other.hitbox.size]))
+                (dungeon.damage-actor s other actor.atk)
+                (dungeon.delete-actor s actor)))
+          (set actor.pos next-pos)))))
   (set s.actors
        (icollect [i actor (ipairs s.actors)]
-         (if (. s.will-delete i) nil actor)))
-  (set s.will-delete []))
+         (if (. s.will-delete actor) nil actor)))
+  (set s.will-delete {}))
 
 (fn dungeon.draw-actors [s]
   (each [i {: kind &as actor} (ipairs s.actors)]
+    (local [x y] actor.pos)
+    (when actor.hitbox
+      (love.graphics.setColor [1 1 1 0.2])
+      (love.graphics.circle :line x y actor.hitbox.size))
     (when actor.char
       (love.graphics.setColor actor.color)
-      (love.graphics.print actor.char (vec2-op - actor.pos [5 10])))
+      (love.graphics.printf actor.char x y 21 :center 0 1 1 10 11))
     (when actor.meters
       (each [_ meter (pairs actor.meters)]
         (let [value (. actor meter.value-field)
-              max (. actor meter.max-field)]
-          (draw.progress [meter.pos meter.size] (/ value max) meter.color))))
+              max (. actor meter.max-field)
+              pos (if (= meter.pos :follow)
+                      [(vec2-op + actor.pos [0 -10])]
+                      meter.pos)]
+          (draw.progress [pos meter.size] (/ value max) meter.color))))
     (case kind
      :player
      (do
-       (love.graphics.setColor 1 1 0.5)
+       (love.graphics.setColor 1 1 1 0.5)
        (dungeon.draw-ray actor.pos [actor.angle 100]))
      :bullet
      (do
@@ -177,5 +210,11 @@
              (set s.player.will-move-to next-pos)
              (if (geom.point-in-polygon? next-pos s.level-border)
                  (dungeon.move-player-to s next-pos)))))))
+
+(fn dungeon.damage-actor [s actor atk]
+  (when actor.hp
+    (set actor.hp (- actor.hp atk))
+    (when (< actor.hp 0)
+      (dungeon.delete-actor s actor))))
 
 dungeon

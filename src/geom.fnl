@@ -117,6 +117,58 @@
           q2 (. polygon (+ 1 (% i (length polygon))))]
       [(geom.lineseg-lineseg-intersection [p1 p2] [q1 q2])]))))
 
+(fn geom.point-circle-intersection [point [origin radius]]
+  (if (< (geom.distance (vec2-op - point origin)) radius)
+    point))
+
+(fn geom.circle-at-x [[[ox oy] r] x]
+  ;; given a circle origin ox, oy, radius r, evaluate it at x. Returns either
+  ;; zero or two points.
+  (let [discriminant (- (^ r 2) (^ (- x ox) 2))]
+    (if
+     (< discriminant 0)
+     nil
+     (let [sqrt-discriminant (^ discriminant 0.5)]
+       (values [x (+ oy sqrt-discriminant)]
+               [x (- oy sqrt-discriminant)])))))
+
+(fn geom.line-circle-intersection [[slope icept] [[cx cy] r]]
+  ;; given a circle origin ox, oy, radius r, evaluate it at a given line.
+  ;; Returns either zero or two points.
+  (if
+     ;; vertical
+     (geom.infinite? slope)
+     (error "Attempt to find circle intersection with vertical line")
+     ;; standard
+     (let [icept (+ icept (- cy) (* slope cx)) ; translate circle to 0,0
+           a (+ 1 (^ slope 2))             ; solve quadratic polynomial
+           b (* 2 slope icept)
+           c (- (^ icept 2) (^ r 2))
+           discriminant (- (^ b 2) (* 4 a c))
+           lhs (/ (- b) 2 a)]
+       (if
+        (< discriminant 0)
+        nil
+        (let [sqrt-discriminant (/ (^ discriminant 0.5) 2 a)
+              x1 (+ lhs sqrt-discriminant)
+              (_ y1) (geom.line-at-x [slope icept] x1)
+              x2 (- lhs sqrt-discriminant)
+              (_ y2) (geom.line-at-x [slope icept] x2)]
+          (values [(vec2-op + [x1 y1] [cx cy])]
+                  [(vec2-op + [x2 y2] [cx cy])]))))))
+
+(fn geom.lineseg-in-circle? [lineseg circle]
+  (let [(slope icept) (geom.points->line (unpack lineseg))
+        secant-points
+        (if (geom.infinite? slope)
+            [(geom.circle-at-x circle (. lineseg 1 1))] ; vertical
+            [(geom.line-circle-intersection [slope icept] circle)])]
+    (and
+     (. secant-points 1)
+     (or
+      (geom.point-lineseg-intersection (. secant-points 1) lineseg)
+      (geom.point-lineseg-intersection (. secant-points 2) lineseg)))))
+
 (fn geom.point-in-polygon? [point polygon]
   (let [cross-count
         (faccumulate [cross-count 0
@@ -132,9 +184,8 @@
                    0)))))]
     (= 1 (% cross-count 2))))
 
-;; return true if something is roughly equal
 (fn geom.approx-eq [a b]
-  (> (* (math.max a b) (^ 2 -30)) (math.abs (- a b))))
+  (>= (* (math.max a b) (^ 2 -30)) (math.abs (- a b))))
 
 (fn geom.nan? [x] (not= x x))
 
