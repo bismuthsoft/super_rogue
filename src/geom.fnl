@@ -58,11 +58,16 @@
 ;; Intersection functions:
 ;;  - A-B-intersection
 ;;  - arg 1 is of type A, arg 2 is of type B
+;;  - arg 1 is always simpler than arg 2, if possible
+;;  - complexity order: point, line, circle, lineseg, polygon
 ;;  - returns x and y as two values if intersection exists, otherwise nil
 ;;  - type "point" is [x y]
 ;;  - type "line" is [slope intercept]
 ;;  - type "lineseg" is [[x y] [x y]]
 ;;  - type "polygon" is [[x y] [x y] ...]
+
+(fn geom.point-point-intersection [d1 d2]
+  (if (geom.vec-eq d1 d2) d1))
 
 (fn geom.line-line-intersection [[s1 y1] [s2 y2]]
   (if
@@ -168,6 +173,12 @@
      (or
       (geom.point-lineseg-intersection (. secant-points 1) lineseg)
       (geom.point-lineseg-intersection (. secant-points 2) lineseg)))))
+
+(fn geom.circle-in-circle? [circ1 circ2]
+  (let [[o1 r1] circ1
+        [o2 r2] circ2
+        distance (geom.distance (vec2-op - o1 o2))]
+    (> (+ r1 r2) distance)))
 
 (fn geom.point-in-polygon? [point polygon]
   (let [cross-count
