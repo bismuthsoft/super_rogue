@@ -2,23 +2,27 @@
 (local geom (require :geom))
 (local util (require :util))
 (local draw (require :draw))
-(local mapgen (require :mapgen))
+(var mapgen (require :mapgen))
 (local lume (require :lib.lume))
 (local pp util.pp)
 
 (local dungeon {})
 
 (fn dungeon.init []
-  (let [(polygon actors) (mapgen.generate-level 1)
-        state {:actors []
-               :level-border polygon
-               :will-delete {}
-               :delta-time 0
-               :time-rate 10
-               :elapsed-time 0}]
-    (each [_ args (ipairs actors)]
-      (dungeon.spawn-actor state (unpack args)))
+  (let [state {:level 0}]
+    (dungeon.next-level state)
     state))
+
+(fn dungeon.next-level [s]
+  (set s.level (+ s.level 1))
+  (set s.actors [])
+  (set s.will-delete {})
+  (set s.elapsed-time 0)
+  (set s.delta-time 0)
+  (let [(polygon actors) (mapgen.generate-level s.level)]
+    (set s.level-border polygon)
+    (each [_ args (ipairs actors)]
+      (dungeon.spawn-actor s (unpack args)))))
 
 (fn dungeon.update [s dt]
   (dungeon.update-player s dt)
@@ -33,7 +37,7 @@
   (dungeon.draw-actors s)
 
   (love.graphics.setColor [1 1 1 1])
-  (love.graphics.print (lume.format "elapsed-time {elapsed-time}" s) 10 10 )  )
+  (love.graphics.print (lume.format "elapsed-time {elapsed-time}" s) 10 10))
 
 (fn dungeon.mousemoved [s x y]
   (set s.player.angle (geom.angle (vec2-op - [x y] s.player.pos))))
@@ -151,10 +155,7 @@
   (table.insert s.actors props)
   (if
    (= kind :player)
-   (do
-    (when s.player
-      (error "Attempt to add second player"))
-    (set s.player props)))
+   (set s.player props))
   props)
 
 (fn dungeon.delete-actor [s actor]
