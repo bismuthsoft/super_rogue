@@ -184,7 +184,6 @@
                    0)))))]
     (= 1 (% cross-count 2))))
 
-;; return true if something is roughly equal
 (fn geom.approx-eq [a b]
   (>= (* (math.max a b) (^ 2 -30)) (math.abs (- a b))))
 
