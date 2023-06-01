@@ -1,6 +1,8 @@
 (var scene-fns {})                      ; scene functions
 (var scene-state {})                    ; scene state
 
+(love.graphics.setFont (love.graphics.newFont "lib/CourierPrime-Bold.ttf" 18))
+
 (fn set-scene [scene-name ...]
   (match (?. scene-fns :deinit)
     (where deinit) (deinit scene-state))
