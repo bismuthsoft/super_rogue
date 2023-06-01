@@ -29,6 +29,7 @@
       (when (or (not love.graphics) (not love.window))
         (error "super_rogue cannot run with --headless.  Please remove this flag and try again."))
       (love.graphics.setFont (love.graphics.newFont "lib/CourierPrime-Bold.ttf" 18))
+      (love.graphics.setLineStyle :rough)
       (set-scene :dungeon))
     :test
     ((. (require :tests) :entrypoint)))) ; Get the tests entrypoint and call
