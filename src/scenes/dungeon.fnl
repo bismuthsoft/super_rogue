@@ -14,53 +14,8 @@
          :will-delete {}
          :delta-time 0
          :time-rate 10}]
-   (dungeon.add-actor
-    state
-    {:kind :player
-     :friendly? true
-     :color [1 1 1]
-     :char "@"
-     :pos [300 300]
-     :angle 0
-     :moved-by 0
-     :move-speed 120
-     :turn-speed 10
-     :hp 3
-     :max-hp 4
-     :stamina 5
-     :max-stamina 10
-     :stamina-regen-rate 0.05
-     :bullet-stamina-cost 8
-     :hitbox {:size 8}
-     :meters {:health
-              {:pos [20 560]
-               :size [100 20]
-               :value-field :hp
-               :max-field :max-hp
-               :color [.9 0 0 1]}
-              :stamina
-              {:pos [140 560]
-               :size [100 20]
-               :follow false
-               :value-field :stamina
-               :max-field :max-stamina
-               :color [0 .7 0 1]}}})
-   (dungeon.add-actor
-    state
-    {:kind :killer-tomato
-     :color [1 0 0]
-     :char "t"
-     :pos [300 500]
-     :hp 3
-     :max-hp 3
-     :atk 0.1
-     :hitbox {:size 8}
-     :meters {:health
-              {:pos :follow
-               :size [20 5]
-               :value-field :hp
-               :max-field :max-hp
-               :color [.9 0 0 1]}}})
+   (dungeon.spawn-actor state :player [300 200])
+   (dungeon.spawn-actor state :killer-tomato [300 300])
    state))
 
 (fn dungeon.update [s dt]
@@ -81,13 +36,7 @@
 (fn dungeon.mousepressed [s x y button]
   (when (> s.player.stamina s.player.bullet-stamina-cost)
     (set s.player.stamina (- s.player.stamina s.player.bullet-stamina-cost))
-    (dungeon.add-actor s {:kind :bullet
-                          :friendly? true
-                          :pos s.player.pos
-                          :color [1 0 0]
-                          :angle s.player.angle
-                          :atk 5
-                          :speed 2})))
+    (dungeon.spawn-actor s :bullet s.player.pos s.player.angle true)))
 
 (fn dungeon.generate-map []
   (geom.polygon {:sides 3 :origin [400 300] :size 300}))
@@ -115,7 +64,69 @@
         (let [step-vec [(geom.polar->rectangular angle step)]]
           [(vec2-op - a step-vec)]))))
 
-(fn dungeon.add-actor [s {: kind &as props}]
+(fn dungeon.spawn-actor [s kind ...]
+  (dungeon.insert-actor s
+   (case kind
+     :player
+     (let [pos ...]
+       {:kind :player
+        : pos
+        :friendly? true
+        :color [1 1 1]
+        :char "@"
+        :angle 0
+        :moved-by 0
+        :move-speed 120
+        :turn-speed 10
+        :hp 3
+        :max-hp 4
+        :stamina 5
+        :max-stamina 10
+        :stamina-regen-rate 0.05
+        :bullet-stamina-cost 8
+        :hitbox {:size 8}
+        :meters {:health
+                 {:pos [20 560]
+                  :size [100 20]
+                  :value-field :hp
+                  :max-field :max-hp
+                  :color [.9 0 0 1]}
+                 :stamina
+                 {:pos [140 560]
+                  :size [100 20]
+                  :follow false
+                  :value-field :stamina
+                  :max-field :max-stamina
+                  :color [0 .7 0 1]}}})
+     :bullet
+     (let [(pos angle friendly?) ...]
+        {: kind
+         :friendly? true
+         :pos s.player.pos
+         :color [1 0 0]
+         :angle s.player.angle
+         :atk 5
+         :speed 2})
+     :killer-tomato
+     (let [pos ...]
+       {: kind
+        :color [1 0 0]
+        :char "t"
+        : pos
+        :hp 3
+        :max-hp 3
+        :atk 0.1
+        :hitbox {:size 8}
+        :meters {:health
+                 {:pos :follow
+                  :size [20 5]
+                  :value-field :hp
+                  :max-field :max-hp
+                  :color [.9 0 0 1]}}})
+     _
+     (error (.. "Unknown Actor kind" kind)))))
+
+(fn dungeon.insert-actor [s {: kind &as props}]
   (table.insert s.actors props)
   (if
    (= kind :player)
@@ -223,7 +234,6 @@
                  (dungeon.move-player-to s next-pos)))))))
 
 (fn dungeon.damage-actor [s actor atk]
-  (pp [:damage actor.kind])
   (when actor.hp
     (set actor.hp (- actor.hp atk))
     (when (< actor.hp 0)
