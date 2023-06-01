@@ -96,6 +96,7 @@
   (lu.assertEvalToTrue (geom.circle-in-circle? [[0 0] 1] [[0.5 0] 1]))
   (lu.assertEvalToTrue (geom.circle-in-circle? [[0 0] 1] [[0.5 0.5] 1]))
   (lu.assertEvalToFalse (geom.circle-in-circle? [[0 0] 1] [[2 0] 1]))
+  (lu.assertEvalToTrue (geom.circle-in-circle? [[300 300] 10] [[305 305] 10]))
   (lu.assertEquals [(geom.line-circle-intersection [0 0] [[0 0] 2])] [[2 0] [-2 0]])
   (lu.assertEquals [(geom.line-circle-intersection [0 5] [[0 0] 2])] [])
   (lu.assertEquals [(geom.line-circle-intersection [0 0] [[1 1] 1])] [[1 0] [1 0]])

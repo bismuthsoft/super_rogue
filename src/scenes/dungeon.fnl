@@ -17,6 +17,7 @@
    (dungeon.add-actor
     state
     {:kind :player
+     :friendly? true
      :color [1 1 1]
      :char "@"
      :pos [300 300]
@@ -46,12 +47,13 @@
                :color [0 .7 0 1]}}})
    (dungeon.add-actor
     state
-    {:kind :turret
-     :color [0 1 0]
+    {:kind :killer-tomato
+     :color [1 0 0]
      :char "t"
      :pos [300 500]
      :hp 3
      :max-hp 3
+     :atk 0.1
      :hitbox {:size 8}
      :meters {:health
               {:pos :follow
@@ -63,8 +65,9 @@
 
 (fn dungeon.update [s dt]
   (dungeon.update-player s dt)
-  (dungeon.update-actors s s.delta-time)
-  (set s.delta-time 0))
+  (when (> s.delta-time 0)
+    (dungeon.update-actors s s.delta-time)
+    (set s.delta-time 0)))
 
 (fn dungeon.draw [s]
   (love.graphics.setColor 1 1 1 1)
@@ -148,12 +151,20 @@
               (dungeon.delete-actor s actor))
           (each [_ other (ipairs s.actors)]
             (when (and other.hitbox
-                       (not= actor.friendly? (= other s.player))
+                       (not= actor.friendly? other.friendly?)
                        (geom.lineseg-in-circle? movement-lineseg
                                                 [other.pos other.hitbox.size]))
                 (dungeon.damage-actor s other actor.atk)
                 (dungeon.delete-actor s actor)))
-          (set actor.pos next-pos)))))
+          (set actor.pos next-pos)))
+      :killer-tomato
+      (do
+        (each [_ other (ipairs s.actors)]
+          (when (and other.hitbox
+                     (not= actor.friendly? other.friendly?)
+                     (geom.circle-in-circle? [actor.pos actor.hitbox.size]
+                                             [other.pos other.hitbox.size]))
+            (dungeon.damage-actor s other (* actor.atk dt)))))))
   (set s.actors
        (icollect [i actor (ipairs s.actors)]
          (if (. s.will-delete actor) nil actor)))
@@ -212,6 +223,7 @@
                  (dungeon.move-player-to s next-pos)))))))
 
 (fn dungeon.damage-actor [s actor atk]
+  (pp [:damage actor.kind])
   (when actor.hp
     (set actor.hp (- actor.hp atk))
     (when (< actor.hp 0)
