@@ -14,7 +14,8 @@
                :level-border polygon
                :will-delete {}
                :delta-time 0
-               :time-rate 10}]
+               :time-rate 10
+               :elapsed-time 0}]
     (each [_ args (ipairs actors)]
       (dungeon.spawn-actor state (unpack args)))
     state))
@@ -22,13 +23,17 @@
 (fn dungeon.update [s dt]
   (dungeon.update-player s dt)
   (when (> s.delta-time 0)
+    (set s.elapsed-time (+ s.delta-time s.elapsed-time))
     (dungeon.update-actors s s.delta-time)
     (set s.delta-time 0)))
 
 (fn dungeon.draw [s]
   (love.graphics.setColor 1 1 1 1)
   (dungeon.draw-polygon s.level-border)
-  (dungeon.draw-actors s))
+  (dungeon.draw-actors s)
+
+  (love.graphics.setColor [1 1 1 1])
+  (love.graphics.print (lume.format "elapsed-time {elapsed-time}" s) 10 10 )  )
 
 (fn dungeon.mousemoved [s x y]
   (set s.player.angle (geom.angle (vec2-op - [x y] s.player.pos))))
@@ -103,10 +108,19 @@
          :color [1 0 0]
          :atk 5
          :speed 2})
+     :particle
+     (let [(pos angle expiry) ...]
+       {: kind
+        : angle
+        : pos
+        : expiry
+        :color [0 1 1 .5]
+        :speed .5})
      :killer-tomato
      (let [pos ...]
        {: kind
         : pos
+        :enemy? true
         :color [1 0 0]
         :char "t"
         :hp 3
@@ -119,6 +133,17 @@
                   :value-field :hp
                   :max-field :max-hp
                   :color [.9 0 0 1]}}})
+     :grid-bug
+     (let [pos ...]
+       {: kind
+        : pos
+        :enemy? true
+        :color [(lume.color "#811A74")]
+        :char "x"
+        :hp 1
+        :max-hp 1
+        :atk 0.05
+        :hitbox {:size 4}})
      _
      (error (.. "Unknown Actor kind" kind)))))
 
@@ -144,6 +169,26 @@
              (math.min
               s.player.max-stamina
               (+ s.player.stamina (* dt s.player.stamina-regen-rate)))))
+      :particle
+      (do
+        (let [step [(geom.polar->rectangular
+                     actor.angle
+                     (* dt actor.speed))]
+              next-pos [(vec2-op + actor.pos step)]
+              movement-lineseg [actor.pos next-pos]
+              collision-point [(geom.lineseg-polygon-intersection
+                                movement-lineseg
+                                s.level-border)]]
+          (when (. collision-point 1)
+              (dungeon.delete-actor s actor))
+          (each [_ other (ipairs s.actors)]
+            (when (and other.hitbox
+                       (geom.lineseg-in-circle? movement-lineseg
+                                                [other.pos other.hitbox.size]))
+                (dungeon.delete-actor s actor)))
+          (set actor.pos next-pos)
+          (when (< actor.expiry s.elapsed-time)
+            (dungeon.delete-actor s actor))))
       :bullet
       (do
         (let [step [(geom.polar->rectangular
@@ -164,7 +209,7 @@
                 (dungeon.damage-actor s other actor.atk)
                 (dungeon.delete-actor s actor)))
           (set actor.pos next-pos)))
-      :killer-tomato
+      (where _ actor.enemy?)
       (do
         (each [_ other (ipairs s.actors)]
           (when (and other.hitbox
@@ -197,12 +242,16 @@
     (case kind
      :player
      (do
-       (love.graphics.setColor 1 1 1 0.5)
+       (love.graphics.setColor 1 1 1 0.3)
        (dungeon.draw-ray actor.pos [actor.angle 100]))
      :bullet
      (do
        (love.graphics.setColor actor.color)
-       (dungeon.draw-ray actor.pos [actor.angle (* 10 actor.speed)])))))
+       (dungeon.draw-ray actor.pos [actor.angle (* 10 actor.speed)]))
+     :particle
+     (do
+       (love.graphics.setColor actor.color)
+       (dungeon.draw-ray actor.pos [actor.angle (* 2 actor.speed)])))))
 
 (fn dungeon.update-player [s dt]
   ;; keyboard input
@@ -233,6 +282,8 @@
   (when actor.hp
     (set actor.hp (- actor.hp atk))
     (when (< actor.hp 0)
+      (for [i 0 359 15]
+        (dungeon.spawn-actor s :particle actor.pos i (+ s.elapsed-time 50)))
       (dungeon.delete-actor s actor))))
 
 dungeon
