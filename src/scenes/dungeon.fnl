@@ -2,21 +2,22 @@
 (local geom (require :geom))
 (local util (require :util))
 (local draw (require :draw))
+(local mapgen (require :mapgen))
 (local lume (require :lib.lume))
 (local pp util.pp)
 
 (local dungeon {})
 
 (fn dungeon.init []
-  (let [state
-        {:level-border (dungeon.generate-map)
-         :actors []
-         :will-delete {}
-         :delta-time 0
-         :time-rate 10}]
-   (dungeon.spawn-actor state :player [300 200])
-   (dungeon.spawn-actor state :killer-tomato [300 300])
-   state))
+  (let [(polygon actors) (mapgen.generate-level 1)
+        state {:actors []
+               :level-border polygon
+               :will-delete {}
+               :delta-time 0
+               :time-rate 10}]
+    (each [_ args (ipairs actors)]
+      (dungeon.spawn-actor state (unpack args)))
+    state))
 
 (fn dungeon.update [s dt]
   (dungeon.update-player s dt)
@@ -36,9 +37,6 @@
   (when (> s.player.stamina s.player.bullet-stamina-cost)
     (set s.player.stamina (- s.player.stamina s.player.bullet-stamina-cost))
     (dungeon.spawn-actor s :bullet s.player.pos s.player.angle true)))
-
-(fn dungeon.generate-map []
-  (geom.polygon {:sides 3 :origin [400 300] :size 300}))
 
 (fn dungeon.move-player-to [s newpos]
   (set s.delta-time (+ s.delta-time
