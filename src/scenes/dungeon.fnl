@@ -222,10 +222,10 @@
                 pos))
           (angle distance) (geom.rectangular->polar (unpack offset))]
       (when (> distance 0)
-           (let [move-speed (* s.player.move-speed dt (if shifted? 10 1))
+           (let [move-speed (* s.player.move-speed dt (if shifted? 0.2 1))
                  offset [(geom.polar->rectangular
                           angle
-                          (* s.player.move-speed dt))]
+                          move-speed)]
                  next-pos [(vec2-op + offset s.player.pos)]]
              (set s.player.will-move-to next-pos)
              (if (geom.point-in-polygon? next-pos s.level-border)
