@@ -169,6 +169,7 @@
         :speed 120
         :hp 3
         :max-hp 4
+        :hide-hp? true
         :stamina 5
         :max-stamina 10
         :stamina-regen-rate 5
@@ -234,13 +235,7 @@
         :hp 3
         :max-hp 3
         :atk 6
-        :hitbox {:size 8 :shape :circle}
-        :meters {:health
-                 {:pos :follow
-                  :size [20 5]
-                  :value-field :hp
-                  :max-field :max-hp
-                  :color [.9 0 0 1]}}})
+        :hitbox {:size 8 :shape :circle}})
      :grid-bug
      (let [pos ...]
        {: kind
@@ -330,6 +325,10 @@
       :line
       (do
         (draw.ray actor.pos [actor.angle actor.hitbox.size] 1 [1 1 1 0.2])))
+    (when (and actor.hp (not actor.hide-hp?) (not (>= actor.hp actor.max-hp)))
+      (draw.progress [[(vec2-op - actor.pos [10 15])] [20 5]]
+                     (/ actor.hp actor.max-hp)
+                     [1 0 0 1]))
     (when actor.char
       (love.graphics.setColor actor.color)
       (love.graphics.printf actor.char x y 21 :center 0 1 1 10 11))
