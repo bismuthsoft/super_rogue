@@ -32,7 +32,8 @@
     (set s.delta-time 0)))
 
 (fn dungeon.draw [s]
-  (love.graphics.setColor 1 1 1 1)
+  (love.graphics.setColor 1 1 1 0.7)
+  (love.graphics.setLineWidth 2)
   (dungeon.draw-polygon s.level-border)
   (dungeon.draw-actors s)
 
