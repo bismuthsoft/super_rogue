@@ -34,12 +34,6 @@
     (where ttm (< ttm s.elapsed-time)) (scene.pop)
     (where ttm) (set s.delta-time (+ s.delta-time (* 10 dt))))
 
-  ;; delete actors
-  (set s.actors
-       (icollect [i actor (ipairs s.actors)]
-         (if (. s.will-delete actor) nil actor)))
-  (set s.will-delete {})
-
   ;; add actors
   (each [_ actor (ipairs s.actors-to-spawn)]
     (table.insert s.actors actor)
@@ -56,7 +50,14 @@
     (when (> s.delta-time 0)
       (set s.elapsed-time (+ s.delta-time s.elapsed-time))
       (dungeon.update-actors s s.delta-time)
-      (set s.delta-time 0)))))
+      (set s.delta-time 0))))
+
+  ;; delete actors
+  (set s.actors
+       (icollect [i actor (ipairs s.actors)]
+         (if (. s.will-delete actor) nil actor)))
+  (set s.will-delete {}))
+
 
 (fn dungeon.draw [s]
   (love.graphics.setColor 1 1 1 0.7)
@@ -175,7 +176,7 @@
         :stamina-regen-rate 5
         :bullet-stamina-cost 8
         :melee-stamina-cost 3
-        :melee-atk 50
+        :melee-atk 10
         :hitbox {:size 8 :shape :circle}
         :meters {:health
                  {:pos [20 560]
