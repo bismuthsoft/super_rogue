@@ -79,8 +79,8 @@
           [250 40.192378864669]
           [700 300]])
   (lu.assertEvalToFalse (geom.lineseg-polygon-intersection [[3 3] [2 2]] test-square))
-  (lu.assertEquals [(geom.lineseg-polygon-intersection [[0 0] [0 2]] test-square)] [0 1])
-  (lu.assertEquals [(geom.lineseg-polygon-intersection [[350 350] [0 350]] test-triangle)] [250 350]))
+  (lu.assertEquals [(geom.lineseg-polygon-intersection [[0 0] [0 2]] test-square)] [0 1 3])
+  (lu.assertEquals [(geom.lineseg-polygon-intersection [[350 350] [0 350]] test-triangle)] [250 350 1]))
 
 (fn TestGeom.test_circle_intersection []
   (lu.assertEvalToTrue (geom.point-circle-intersection [0 0] [[0 0] 1]))
