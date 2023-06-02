@@ -45,13 +45,15 @@
 (fn dungeon.keypressed [s keycode scancode]
   ;; DEBUG
   (when (= scancode :f5)
-      (tset package.loaded :mapgen nil)
-      (let [(status err) (pcall
-                          (lambda []
-                            (set mapgen (require :mapgen))
-                            (dungeon.next-level s)))]
-        (if (= status false)
-            (print (.. "ERROR: failed to reload map. " err))))))
+        (tset package.loaded :mapgen nil)
+        (let [(status err) (pcall
+                            (lambda []
+                              (set mapgen (require :mapgen))
+                              (dungeon.next-level s)))]
+          (if (= status false)
+              (print (.. "ERROR: failed to reload map. " err)))))
+  (when (= scancode :f6)
+    (pp s.level-border)))
 
 (fn dungeon.mousepressed [s x y button]
   (when (> s.player.stamina s.player.bullet-stamina-cost)
