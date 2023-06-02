@@ -22,6 +22,12 @@
   (lu.assertEquals [0 1] [(geom.points->line [0 1] [1 1])])
   (lu.assertEquals [1 1] [(geom.points->line [0 1] [1 2])]))
 
+(fn TestGeom.test_angle []
+  (lu.assertEquals (geom.angle-of-vertex [0 0] [0 1] [0 0]) 0)
+  (lu.assertEquals (geom.angle-of-vertex [0 0] [1 0] [1 1]) (/ math.pi 2))
+  (lu.assertEquals (geom.angle-of-vertex [0 0] [0 1] [0 2]) math.pi)
+  (lu.assertEquals (geom.angle-of-vertex [0 0] [1 0] [1 -1]) (/ math.pi -2)))
+
 (fn TestGeom.test_line_intersection []
   (lu.assertEvalToTrue (geom.point-lineseg-intersection [0 0] [[0 0] [3 3]]))
   (lu.assertEvalToTrue (geom.point-lineseg-intersection [1.5 1.5] [[0 0] [3 3]]))
@@ -121,6 +127,7 @@
   (local bowtie [[0 0] [0 1] [1 0] [1 1]]) ; self-intersection
   (local M [[0 0] [0 1] [1 0] [2 1] [2 0]])  ; self-perpendicular
   (local huh [[0 0] [0 0] [0 0]])  ; self-intersection (wonky)
+  (local tiny-angle [[0 0] [0 1] [0 0.000001]])
   (local infinite [[0 0] [0 1] [(/ 1 0) 0]])  ; lol no
   (local non-number [[0 0] [0 1] [(/ 0 0) 0]])   ; lol no
   (lu.assertEvalToTrue (geom.polygon-valid? square))
@@ -129,6 +136,7 @@
   (lu.assertEvalToFalse (geom.polygon-valid? bowtie))
   (lu.assertEvalToFalse (geom.polygon-valid? M))
   (lu.assertEvalToFalse (geom.polygon-valid? huh))
+  (lu.assertEvalToFalse (geom.polygon-valid? tiny-angle))
   (lu.assertEvalToFalse (geom.polygon-valid? infinite))
   (lu.assertEvalToFalse (geom.polygon-valid? non-number)))
 

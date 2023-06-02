@@ -9,9 +9,25 @@
 (set geom.FAR 99999999) ;; arbitrary big number which must be larger than
                         ;; the largest map size
 
+(local pi math.pi)
+(local tau (* 2 pi))
+
 (fn geom.angle [x y]
   ;; get the angle of point x,y from 0,0
   (math.atan2 y x))
+
+(fn geom.angle-to-signed [angle]
+  ;; given any angle, convert it to the range -pi to pi
+  (let [angle (% angle tau)]
+    (if (> angle pi)
+        (- angle tau)
+        angle)))
+
+(fn geom.angle-of-vertex [p1 p2 p3]
+  ;; test how far apart a given vertex is, defined by 3 points
+  (let [a1 (geom.angle (vec2-op - p2 p1))
+        a2 (geom.angle (vec2-op - p2 p3))]
+    (geom.angle-to-signed (- a1 a2))))
 
 (fn geom.distance [x y]
   ;; get the distance of point x,y from 0,0
@@ -40,7 +56,7 @@
       [(vec2-op +
                 origin
                 [(geom.polar->rectangular
-                  (+ angle (* 2 math.pi (/ i sides)))
+                  (+ angle (* 2 pi (/ i sides)))
                   size)])])))
 
 (fn geom.points->ray [a b]
@@ -211,7 +227,9 @@
                    0)))))]
     (= 1 (% cross-count 2))))
 
-(fn geom.polygon-valid? [polygon]
+(fn geom.polygon-valid? [polygon ?min-angle]
+  ;; validate that a polygon has more than 2 points, no internal crossings, and
+  ;; no angles less than min-angle.
   (and
    (> (length polygon) 2) ; polygon must have 3 or more points
    (accumulate [valid true
@@ -223,9 +241,11 @@
                  i 1 (length polygon)
                  &until (not valid)]
      ;; ... which can't intersect with any non-adjacent segments
-     (let [i0 (if (= i 1) (length polygon) (- i 1))
+     (let [min-angle (or ?min-angle (/ tau 360)) ; default 1 degree
+           i0 (if (= i 1) (length polygon) (- i 1))
            i1 i
            i2 (+ 1 (% i (length polygon)))
+           q0 (. polygon i0)
            q1 (. polygon i1)
            q2 (. polygon i2)
            map (geom.lineseg-polygon-intersection-map [q1 q2] polygon)]
@@ -233,6 +253,7 @@
                      j (+ i 1) (length polygon)
                      &until (not valid)]
          (and
+          (<= min-angle (math.abs (geom.angle-of-vertex q0 q1 q2)))
           (not (geom.vec-eq q1 (. polygon j))) ; same point can't exist twice
           (or (= j i0) (= j i1) (= j i2) (= (. map j) false))))))))
 
