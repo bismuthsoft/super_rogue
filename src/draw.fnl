@@ -1,5 +1,6 @@
 (local draw {})
 (local geom (require :geom))
+(local util (require :util))
 (import-macros {: vec2-op} :geom-macros)
 
 (macro with-graphics-context [body ...]
@@ -21,5 +22,8 @@
      (love.graphics.setColor color)
      (love.graphics.setLineWidth thickness)
      (love.graphics.line x y x2 y2))))
+
+(fn draw.polygon [polygon]
+  (love.graphics.polygon "line" (unpack (util.flatten polygon))))
 
 draw

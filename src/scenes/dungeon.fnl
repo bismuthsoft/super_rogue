@@ -3,6 +3,7 @@
 (local geom (require :geom))
 (local util (require :util))
 (local draw (require :draw))
+(local collide (require :collide))
 (var mapgen (require :mapgen))
 (local lume (require :lib.lume))
 (local pp util.pp)
@@ -17,10 +18,12 @@
 (fn dungeon.next-level [s]
   (set s.level (+ s.level 1))
   (set s.actors [])
+  (set s.actors-to-spawn [])
   (set s.will-delete {})
   (set s.elapsed-time 0)
   (set s.delta-time 0)
   (set s.time-til-menu nil)
+  (set s.freeze-player-until -100000)
   (let [(polygon actors) (mapgen.generate-level s.level)]
     (set s.level-border polygon)
     (each [_ args (ipairs actors)]
@@ -30,16 +33,35 @@
   (match s.time-til-menu
     (where ttm (< ttm s.elapsed-time)) (scene.pop)
     (where ttm) (set s.delta-time (+ s.delta-time (* 10 dt))))
-  (dungeon.update-player s dt)
-  (when (> s.delta-time 0)
-    (set s.elapsed-time (+ s.delta-time s.elapsed-time))
-    (dungeon.update-actors s s.delta-time)
-    (set s.delta-time 0)))
+
+  ;; delete actors
+  (set s.actors
+       (icollect [i actor (ipairs s.actors)]
+         (if (. s.will-delete actor) nil actor)))
+  (set s.will-delete {})
+
+  ;; add actors
+  (each [_ actor (ipairs s.actors-to-spawn)]
+    (table.insert s.actors actor)
+    (set s.actors-to-spawn []))
+
+  (if
+   (> s.freeze-player-until s.elapsed-time)
+   (do                                  ; realtime mode
+      (set s.elapsed-time (+ dt s.elapsed-time))
+      (dungeon.update-actors s dt))
+   (do                                  ; normal (freezy) mode
+    (dungeon.update-player s dt)
+    ;; add new actors
+    (when (> s.delta-time 0)
+      (set s.elapsed-time (+ s.delta-time s.elapsed-time))
+      (dungeon.update-actors s s.delta-time)
+      (set s.delta-time 0)))))
 
 (fn dungeon.draw [s]
   (love.graphics.setColor 1 1 1 0.7)
   (love.graphics.setLineWidth 2)
-  (dungeon.draw-polygon s.level-border)
+  (draw.polygon s.level-border)
   (dungeon.draw-actors s)
 
   (love.graphics.setColor [1 1 1 1])
@@ -49,6 +71,20 @@
   (set s.player.angle (geom.angle (vec2-op - [x y] s.player.pos))))
 
 (fn dungeon.keypressed [s keycode scancode]
+  (when (= scancode :space)
+    (dungeon.actor-try-stamina-action
+     s.player
+     s.player.melee-stamina-cost
+     (lambda []
+       (dungeon.freeze-player s 0.2)
+       (dungeon.spawn-actor
+        s
+        :sword
+        s.player.pos
+        s.player.angle
+        true
+        s.player.melee-atk
+        {:duration 0.2}))))
   ;; DEBUG
   (when (= scancode :f5)
         (tset package.loaded :mapgen nil)
@@ -62,23 +98,37 @@
     (pp s.level-border)))
 
 (fn dungeon.mousepressed [s x y button]
-  (when (> s.player.stamina s.player.bullet-stamina-cost)
-    (set s.player.stamina (- s.player.stamina s.player.bullet-stamina-cost))
-    (dungeon.spawn-actor s :bullet s.player.pos s.player.angle true)))
+  (dungeon.actor-try-stamina-action
+   s.player
+   s.player.bullet-stamina-cost
+   (lambda []
+     (dungeon.spawn-actor s :bullet s.player.pos s.player.angle true))))
 
 (fn dungeon.move-player-to [s newpos]
   (set s.delta-time (+ s.delta-time
                        (/ (geom.distance (vec2-op - newpos s.player.pos))
                           s.player.speed)))
+  (dungeon.actor-look-at-pos s.player (love.mouse.getPosition))
   (set s.player.pos newpos))
 
-(fn dungeon.draw-polygon [polygon]
-  (love.graphics.polygon "line" (unpack (util.flatten polygon))))
+(fn dungeon.freeze-player [s duration]
+  (set s.freeze-player-until (+ s.elapsed-time duration)))
 
-(fn dungeon.draw-ray [[x y] [angle len]]
-  (love.graphics.line
-   x y
-   (vec2-op + [x y] [(geom.polar->rectangular angle len)])))
+(fn dungeon.actor-step-forward [actor dt]
+  (let [step [(geom.polar->rectangular
+               actor.angle
+               (* dt actor.speed))]
+        next-pos [(vec2-op + actor.pos step)]]
+    (set actor.pos next-pos)))
+
+(fn dungeon.actor-try-stamina-action [actor cost action ...]
+  (when (> actor.stamina cost)
+    (set actor.stamina (- actor.stamina cost))
+    (action ...)))
+
+(fn dungeon.actor-look-at-pos [actor x y]
+  (set actor.angle
+       (geom.angle (vec2-op - [x y] actor.pos))))
 
 ;; move a 'step' pixels towards b, return the result
 (fn dungeon.step-vec-towards [a b step]
@@ -123,7 +173,9 @@
         :max-stamina 10
         :stamina-regen-rate 5
         :bullet-stamina-cost 8
-        :hitbox {:size 8}
+        :melee-stamina-cost 3
+        :melee-atk 50
+        :hitbox {:size 8 :shape :circle}
         :meters {:health
                  {:pos [20 560]
                   :size [100 20]
@@ -146,6 +198,24 @@
          :color [1 0 0]
          :atk 5
          :speed 300})
+     :sword
+     (let [(pos angle friendly? atk props) ...
+           arc-len (or props.arc-len (/ math.pi 4))
+           duration (or props.duration 0.2)
+           angle (- angle (/ arc-len 2))
+           len (or props.len 30)
+           rotate-speed (/ arc-len duration)
+           expiry (+ s.elapsed-time duration)]
+       {: kind
+        : pos
+        : angle
+        : friendly?
+        : atk
+        :enemy? (not friendly?)
+        :hitbox {:shape :line :size len}
+        :color [1 0 0 1]
+        : rotate-speed
+        : expiry})
      :particle
      (let [(pos angle props) ...]
        {: kind
@@ -163,8 +233,8 @@
         :char "t"
         :hp 3
         :max-hp 3
-        :atk 0.1
-        :hitbox {:size 8}
+        :atk 6
+        :hitbox {:size 8 :shape :circle}
         :meters {:health
                  {:pos :follow
                   :size [20 5]
@@ -180,13 +250,13 @@
         :char "x"
         :hp 1
         :max-hp 1
-        :atk 0.05
-        :hitbox {:size 4}})
+        :atk 2
+        :hitbox {:size 4 :shape :circle}})
      _
      (error (.. "Unknown Actor kind" kind)))))
 
 (fn dungeon.insert-actor [s {: kind &as props}]
-  (table.insert s.actors props)
+  (table.insert s.actors-to-spawn props)
   (if
    (= kind :player)
    (set s.player props))
@@ -206,6 +276,15 @@
 
 (fn dungeon.update-actors [s dt]
   (each [i {: kind &as actor} (ipairs s.actors)]
+    (when (and actor.hitbox actor.atk)
+      (each [_ other (ipairs s.actors)]
+        (when (and other.hitbox
+                   (not= actor.friendly? other.friendly?)
+                   (collide.actors-collide? actor other))
+          (dungeon.damage-actor s other (* actor.atk dt)))))
+    (when (and actor.expiry
+               (< actor.expiry s.elapsed-time))
+      (dungeon.delete-actor s actor))
     (case kind
       :player
       (do
@@ -215,13 +294,10 @@
               (+ s.player.stamina (* dt s.player.stamina-regen-rate)))))
       :particle
       (do
-        (let [step [(geom.polar->rectangular
-                     actor.angle
-                     (* dt actor.speed))]
-              next-pos [(vec2-op + actor.pos step)]]
-          (set actor.pos next-pos)
-          (when (< actor.expiry s.elapsed-time)
-            (dungeon.delete-actor s actor))))
+        (dungeon.actor-step-forward actor dt))
+      :sword
+      (do
+        (set actor.angle (+ actor.angle (* dt actor.rotate-speed))))
       :bullet
       (do
         (let [step [(geom.polar->rectangular
@@ -241,26 +317,19 @@
                                                 [other.pos other.hitbox.size]))
                 (dungeon.damage-actor s other actor.atk)
                 (dungeon.delete-actor s actor)))
-          (set actor.pos next-pos)))
-      (where _ actor.enemy?)
-      (do
-        (each [_ other (ipairs s.actors)]
-          (when (and other.hitbox
-                     (not= actor.friendly? other.friendly?)
-                     (geom.circle-in-circle? [actor.pos actor.hitbox.size]
-                                             [other.pos other.hitbox.size]))
-            (dungeon.damage-actor s other (* actor.atk dt)))))))
-  (set s.actors
-       (icollect [i actor (ipairs s.actors)]
-         (if (. s.will-delete actor) nil actor)))
-  (set s.will-delete {}))
+          (set actor.pos next-pos))))))
 
 (fn dungeon.draw-actors [s]
   (each [i {: kind &as actor} (ipairs s.actors)]
     (local [x y] actor.pos)
-    (when actor.hitbox
-      (love.graphics.setColor [1 1 1 0.2])
-      (love.graphics.circle :line x y actor.hitbox.size))
+    (case (?. actor :hitbox :shape)
+      :circle
+      (do
+        (love.graphics.setColor [1 1 1 0.2])
+        (love.graphics.circle :line x y actor.hitbox.size))
+      :line
+      (do
+        (draw.ray actor.pos [actor.angle actor.hitbox.size] 1 [1 1 1 0.2])))
     (when actor.char
       (love.graphics.setColor actor.color)
       (love.graphics.printf actor.char x y 21 :center 0 1 1 10 11))
@@ -275,16 +344,21 @@
     (case kind
      :player
      (do
-       (love.graphics.setColor 1 1 1 0.3)
-       (dungeon.draw-ray actor.pos [actor.angle 100]))
+       (draw.ray actor.pos [actor.angle 100] 1 [1 1 1 0.3]))
      :bullet
      (do
-       (love.graphics.setColor actor.color)
-       (dungeon.draw-ray actor.pos [actor.angle (/ actor.speed 60)]))
+       (draw.ray actor.pos [actor.angle (/ actor.speed -60)] 1 actor.color))
      :particle
      (do
+       (draw.ray actor.pos [actor.angle (/ actor.speed 60)] 1 actor.color))
+     :sword
+     (do
        (love.graphics.setColor actor.color)
-       (dungeon.draw-ray actor.pos [actor.angle (/ actor.speed 60)])))))
+       (love.graphics.arc :fill
+                          x y
+                          actor.hitbox.size
+                          (- actor.angle (/ actor.rotate-speed 30))
+                          (+ actor.angle (/ actor.rotate-speed 30)))))))
 
 (fn dungeon.update-player [s dt]
   ;; keyboard input
