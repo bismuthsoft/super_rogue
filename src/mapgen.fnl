@@ -13,14 +13,32 @@
           [:grid-bug]
           [:grid-bug]
           [:grid-bug]])
-  (let [map (mapgen.join-2-polygons
-             (geom.polygon {:sides 8 :origin [100 200] :size 100 :angle 0})
-             (geom.polygon {:sides 8 :origin [500 300] :size 100 :angle 0}))
+  (let [map (mapgen.join-polygons (unpack (mapgen.random-polygons)))
         map-rect (mapgen.polygon-bounding-box map)]
     (values
      map
      (icollect [_ [kind] (ipairs enemy-list)]
        [kind (mapgen.random-point-in-polygon map map-rect)]))))
+
+(fn mapgen.random-polygons []
+  (var polygons [])
+  (for [i 1 100]
+    (let [(ssx ssy) (love.window.getMode)
+          margin 150
+          next-poly (geom.polygon {:sides (love.math.random 3 12)
+                                   :origin [(love.math.random margin (- ssx margin))
+                                            (love.math.random margin (- ssy margin))]
+                                   :size (love.math.random 50 200)
+                                   :angle (* 2 math.pi (love.math.random))})
+          collision?
+          (accumulate [collision? false
+                       _ poly (ipairs polygons)
+                       &until collision?]
+            (geom.rect-in-rect?
+             (mapgen.polygon-bounding-box poly)
+             (mapgen.polygon-bounding-box next-poly)))]
+      (if (not collision?) (table.insert polygons next-poly))))
+  polygons)
 
 (fn mapgen.polygon-bounding-box [p]
   (accumulate [[min-x min-y max-x max-y]
@@ -48,16 +66,29 @@
         point
         (mapgen.random-point-in-polygon polygon rect))))
 
-(fn mapgen.join-2-polygons [poly1 poly2]
+(fn mapgen.join-polygons [...]
+  (var poly-out nil)
+  (while (not poly-out)
+    (let [polygon-list (lume.shuffle [...])]
+      (set poly-out
+        (faccumulate [poly-out (. polygon-list 1)
+                      i 2 (length polygon-list)
+                      &until (not poly-out)]
+          (mapgen.try-join-2-polygons poly-out (. polygon-list i))))))
+  poly-out)
+
+(fn mapgen.try-join-2-polygons [poly1 poly2]
   (let [point1 (mapgen.random-point-in-polygon poly1)
         point2 (mapgen.random-point-in-polygon poly2)
         lineseg [point1 point2]
         (_ _ vindex1) (geom.lineseg-polygon-intersection lineseg poly1)
-        (_ _ vindex2) (geom.lineseg-polygon-intersection lineseg poly2)]
-    (lume.concat
-     (lume.slice poly1 1 vindex1)
-     (lume.slice poly2 (+ 1 vindex2))
-     (lume.slice poly2 1 vindex2)
-     (lume.slice poly1 (+ 1 vindex1)))))
+        (_ _ vindex2) (geom.lineseg-polygon-intersection lineseg poly2)
+        polygon-out (lume.concat
+                     (lume.slice poly1 1 vindex1)
+                     (lume.slice poly2 (+ 1 vindex2))
+                     (lume.slice poly2 1 vindex2)
+                     (lume.slice poly1 (+ 1 vindex1)))
+        valid (geom.polygon-valid? polygon-out)]
+    (and valid polygon-out)))
 
 mapgen
