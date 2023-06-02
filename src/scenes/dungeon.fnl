@@ -271,13 +271,6 @@
       (scene.set :menu))
   (tset s.will-delete actor true))
 
-(fn dungeon.player [s]
-  (each [i {: kind &as actor} (ipairs s.actors)]
-    (match kind
-      :player
-      (lua "return actor")))
-  nil)                                  ; Explicit
-
 (fn dungeon.update-actors [s dt]
   (each [i {: kind &as actor} (ipairs s.actors)]
     ;; hitboxes
@@ -407,7 +400,6 @@
                           angle
                           speed)]
                  next-pos [(vec2-op + offset s.player.pos)]]
-             (set s.player.will-move-to next-pos)
              (if (geom.point-in-polygon? next-pos s.level-border)
                  (dungeon.move-player-to s next-pos)))))))
 
