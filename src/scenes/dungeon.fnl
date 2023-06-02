@@ -1,4 +1,5 @@
 (import-macros {: vec2-op} :geom-macros)
+(local scene (require :scene))
 (local geom (require :geom))
 (local util (require :util))
 (local draw (require :draw))
@@ -19,12 +20,16 @@
   (set s.will-delete {})
   (set s.elapsed-time 0)
   (set s.delta-time 0)
+  (set s.time-til-menu nil)
   (let [(polygon actors) (mapgen.generate-level s.level)]
     (set s.level-border polygon)
     (each [_ args (ipairs actors)]
       (dungeon.spawn-actor s (unpack args)))))
 
 (fn dungeon.update [s dt]
+  (match s.time-til-menu
+    (where ttm (< ttm s.elapsed-time)) (scene.pop)
+    (where ttm) (set s.delta-time (+ s.delta-time (* 10 dt))))
   (dungeon.update-player s dt)
   (when (> s.delta-time 0)
     (set s.elapsed-time (+ s.delta-time s.elapsed-time))
@@ -186,6 +191,13 @@
 (fn dungeon.delete-actor [s actor]
   (tset s.will-delete actor true))
 
+(fn dungeon.player [s]
+  (each [i {: kind &as actor} (ipairs s.actors)]
+    (match kind
+      :player
+      (lua "return actor")))
+  nil)                                  ; Explicit
+
 (fn dungeon.update-actors [s dt]
   (each [i {: kind &as actor} (ipairs s.actors)]
     (case kind
@@ -298,6 +310,8 @@
     (set actor.hp (- actor.hp atk))
     (when (< actor.hp 0)
       (dungeon.spawn-particles s :circle actor.pos {:color actor.color :count 20})
+      (match actor.kind
+        :player (set s.time-til-menu (+ s.elapsed-time 50)))
       (dungeon.delete-actor s actor))))
 
 dungeon
