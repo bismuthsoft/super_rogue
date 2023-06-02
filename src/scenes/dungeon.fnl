@@ -75,7 +75,19 @@
   (set s.delta-time (+ s.delta-time
                        (/ (geom.distance (vec2-op - newpos s.player.pos))
                           s.player.speed)))
+  (dungeon.actor-look-at-pos s.player (love.mouse.getPosition))
   (set s.player.pos newpos))
+
+(fn dungeon.actor-step-forward [actor dt]
+  (let [step [(geom.polar->rectangular
+               actor.angle
+               (* dt actor.speed))]
+        next-pos [(vec2-op + actor.pos step)]]
+    (set actor.pos next-pos)))
+
+(fn dungeon.actor-look-at-pos [actor x y]
+  (set actor.angle
+       (geom.angle (vec2-op - [x y] actor.pos))))
 
 (fn dungeon.draw-polygon [polygon]
   (love.graphics.polygon "line" (unpack (util.flatten polygon))))
@@ -220,13 +232,9 @@
               (+ s.player.stamina (* dt s.player.stamina-regen-rate)))))
       :particle
       (do
-        (let [step [(geom.polar->rectangular
-                     actor.angle
-                     (* dt actor.speed))]
-              next-pos [(vec2-op + actor.pos step)]]
-          (set actor.pos next-pos)
-          (when (< actor.expiry s.elapsed-time)
-            (dungeon.delete-actor s actor))))
+        (dungeon.actor-step-forward actor dt)
+        (when (< actor.expiry s.elapsed-time)
+          (dungeon.delete-actor s actor)))
       :bullet
       (do
         (let [step [(geom.polar->rectangular
