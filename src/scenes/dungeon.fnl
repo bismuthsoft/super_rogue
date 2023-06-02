@@ -2,23 +2,27 @@
 (local geom (require :geom))
 (local util (require :util))
 (local draw (require :draw))
-(local mapgen (require :mapgen))
+(var mapgen (require :mapgen))
 (local lume (require :lib.lume))
 (local pp util.pp)
 
 (local dungeon {})
 
 (fn dungeon.init []
-  (let [(polygon actors) (mapgen.generate-level 1)
-        state {:actors []
-               :level-border polygon
-               :will-delete {}
-               :delta-time 0
-               :time-rate 10
-               :elapsed-time 0}]
-    (each [_ args (ipairs actors)]
-      (dungeon.spawn-actor state (unpack args)))
+  (let [state {:level 0}]
+    (dungeon.next-level state)
     state))
+
+(fn dungeon.next-level [s]
+  (set s.level (+ s.level 1))
+  (set s.actors [])
+  (set s.will-delete {})
+  (set s.elapsed-time 0)
+  (set s.delta-time 0)
+  (let [(polygon actors) (mapgen.generate-level s.level)]
+    (set s.level-border polygon)
+    (each [_ args (ipairs actors)]
+      (dungeon.spawn-actor s (unpack args)))))
 
 (fn dungeon.update [s dt]
   (dungeon.update-player s dt)
@@ -33,10 +37,21 @@
   (dungeon.draw-actors s)
 
   (love.graphics.setColor [1 1 1 1])
-  (love.graphics.print (lume.format "elapsed-time {elapsed-time}" s) 10 10 )  )
+  (love.graphics.print (lume.format "elapsed-time {elapsed-time}" s) 10 10))
 
 (fn dungeon.mousemoved [s x y]
   (set s.player.angle (geom.angle (vec2-op - [x y] s.player.pos))))
+
+(fn dungeon.keypressed [s keycode scancode]
+  ;; DEBUG
+  (when (= scancode :f5)
+      (tset package.loaded :mapgen nil)
+      (let [(status err) (pcall
+                          (lambda []
+                            (set mapgen (require :mapgen))
+                            (dungeon.next-level s)))]
+        (if (= status false)
+            (print (.. "ERROR: failed to reload map. " err))))))
 
 (fn dungeon.mousepressed [s x y button]
   (when (> s.player.stamina s.player.bullet-stamina-cost)
@@ -65,6 +80,20 @@
         b
         (let [step-vec [(geom.polar->rectangular angle step)]]
           [(vec2-op - a step-vec)]))))
+
+(fn dungeon.spawn-particles [s kind ...]
+  (case kind
+    :circle
+     (let [(pos props) ...
+           count (or props.count 20)
+           color (or props.color [1 1 1 1])
+           lifetime 100
+           speed (or props.speed 5)]
+       (tset color 4 0.5)
+       (for [i 1 count]
+         (dungeon.spawn-actor s :particle pos i {: color
+                                                 : lifetime
+                                                 :speed (* speed (+ 1 (math.random)))})))))
 
 (fn dungeon.spawn-actor [s kind ...]
   (dungeon.insert-actor s
@@ -109,13 +138,13 @@
          :atk 5
          :speed 2})
      :particle
-     (let [(pos angle expiry) ...]
+     (let [(pos angle props) ...]
        {: kind
         : angle
         : pos
-        : expiry
-        :color [0 1 1 .5]
-        :speed .5})
+        :color props.color
+        :expiry (+ s.elapsed-time props.lifetime)
+        :speed props.speed})
      :killer-tomato
      (let [pos ...]
        {: kind
@@ -151,10 +180,7 @@
   (table.insert s.actors props)
   (if
    (= kind :player)
-   (do
-    (when s.player
-      (error "Attempt to add second player"))
-    (set s.player props)))
+   (set s.player props))
   props)
 
 (fn dungeon.delete-actor [s actor]
@@ -174,18 +200,7 @@
         (let [step [(geom.polar->rectangular
                      actor.angle
                      (* dt actor.speed))]
-              next-pos [(vec2-op + actor.pos step)]
-              movement-lineseg [actor.pos next-pos]
-              collision-point [(geom.lineseg-polygon-intersection
-                                movement-lineseg
-                                s.level-border)]]
-          (when (. collision-point 1)
-              (dungeon.delete-actor s actor))
-          (each [_ other (ipairs s.actors)]
-            (when (and other.hitbox
-                       (geom.lineseg-in-circle? movement-lineseg
-                                                [other.pos other.hitbox.size]))
-                (dungeon.delete-actor s actor)))
+              next-pos [(vec2-op + actor.pos step)]]
           (set actor.pos next-pos)
           (when (< actor.expiry s.elapsed-time)
             (dungeon.delete-actor s actor))))
@@ -282,8 +297,7 @@
   (when actor.hp
     (set actor.hp (- actor.hp atk))
     (when (< actor.hp 0)
-      (for [i 0 359 15]
-        (dungeon.spawn-actor s :particle actor.pos i (+ s.elapsed-time 50)))
+      (dungeon.spawn-particles s :circle actor.pos {:color actor.color :count 20})
       (dungeon.delete-actor s actor))))
 
 dungeon

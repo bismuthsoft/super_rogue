@@ -112,15 +112,16 @@
            (geom.point-lineseg-intersection isect-point [q1 q2]))
           (unpack isect-point)))))
 
-;; return the first face of the polygon that intersects
-(fn geom.lineseg-polygon-intersection [[p1 p2] polygon]
+(fn geom.lineseg-polygon-intersection [lineseg polygon]
+  ; return the x, y, and index of the face that intersects
   (unpack
-   (faccumulate [intersection []
-                 i 1 (length polygon)
-                 &until (. intersection 1)]
-    (let [q1 (. polygon i)
-          q2 (. polygon (+ 1 (% i (length polygon))))]
-      [(geom.lineseg-lineseg-intersection [p1 p2] [q1 q2])]))))
+     (faccumulate [intersection []
+                   i 1 (length polygon)
+                   &until (. intersection 1)]
+      (let [q1 (. polygon i)
+            q2 (. polygon (+ 1 (% i (length polygon))))
+            isect-point [(geom.lineseg-lineseg-intersection lineseg [q1 q2])]]
+        [(. isect-point 1) (. isect-point 2) i]))))
 
 (fn geom.point-circle-intersection [point [origin radius]]
   (if (< (geom.distance (vec2-op - point origin)) radius)
