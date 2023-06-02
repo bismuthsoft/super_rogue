@@ -63,7 +63,8 @@
 
 (fn dungeon.move-player-to [s newpos]
   (set s.delta-time (+ s.delta-time
-                       (geom.distance (vec2-op - newpos s.player.pos))))
+                       (/ (geom.distance (vec2-op - newpos s.player.pos))
+                          s.player.speed)))
   (set s.player.pos newpos))
 
 (fn dungeon.draw-polygon [polygon]
@@ -87,17 +88,17 @@
 (fn dungeon.spawn-particles [s kind ...]
   (case kind
     :circle
-     (let [(pos props) ...
-           count (or props.count 20)
-           color (or props.color [1 1 1 1])
-           lifetime 100
-           speed (or props.speed 5)]
-       (tset color 4 0.5)
-       (for [i 1 count]
-         (dungeon.spawn-actor s :particle pos i
-                              {: color
-                               : lifetime
-                               :speed (* speed (+ 1 (math.random)))})))))
+    (let [(pos props) ...
+          count (or props.count 20)
+          color (or props.color [1 1 1 1])
+          lifetime 100
+          speed (or props.speed 500)]
+      (tset color 4 0.5)
+      (for [i 1 count]
+        (dungeon.spawn-actor s :particle pos i
+                             {: color
+                              : lifetime
+                              :speed (* speed (+ 1 (math.random)))})))))
 
 (fn dungeon.spawn-actor [s kind ...]
   (dungeon.insert-actor s
@@ -110,13 +111,12 @@
         :color [1 1 1]
         :char "@"
         :angle 0
-        :move-speed 120
-        :turn-speed 10
+        :speed 120
         :hp 3
         :max-hp 4
         :stamina 5
         :max-stamina 10
-        :stamina-regen-rate 0.05
+        :stamina-regen-rate 5
         :bullet-stamina-cost 8
         :hitbox {:size 8}
         :meters {:health
@@ -140,7 +140,7 @@
          : angle
          :color [1 0 0]
          :atk 5
-         :speed 2})
+         :speed 300})
      :particle
      (let [(pos angle props) ...]
        {: kind
@@ -266,11 +266,11 @@
      :bullet
      (do
        (love.graphics.setColor actor.color)
-       (dungeon.draw-ray actor.pos [actor.angle (* 10 actor.speed)]))
+       (dungeon.draw-ray actor.pos [actor.angle (/ actor.speed 60)]))
      :particle
      (do
        (love.graphics.setColor actor.color)
-       (dungeon.draw-ray actor.pos [actor.angle (* 2 actor.speed)])))))
+       (dungeon.draw-ray actor.pos [actor.angle (/ actor.speed 60)])))))
 
 (fn dungeon.update-player [s dt]
   ;; keyboard input
@@ -288,10 +288,10 @@
                 pos))
           (angle distance) (geom.rectangular->polar (unpack offset))]
       (when (> distance 0)
-           (let [move-speed (* s.player.move-speed dt (if shifted? 0.2 1))
+           (let [speed (* s.player.speed dt (if shifted? 0.2 1))
                  offset [(geom.polar->rectangular
                           angle
-                          move-speed)]
+                          speed)]
                  next-pos [(vec2-op + offset s.player.pos)]]
              (set s.player.will-move-to next-pos)
              (if (geom.point-in-polygon? next-pos s.level-border)
