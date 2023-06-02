@@ -17,6 +17,7 @@
 (fn dungeon.next-level [s]
   (set s.level (+ s.level 1))
   (set s.actors [])
+  (set s.actors-to-spawn [])
   (set s.will-delete {})
   (set s.elapsed-time 0)
   (set s.delta-time 0)
@@ -31,6 +32,10 @@
     (where ttm (< ttm s.elapsed-time)) (scene.pop)
     (where ttm) (set s.delta-time (+ s.delta-time (* 10 dt))))
   (dungeon.update-player s dt)
+  ;; add new actors
+  (each [_ actor (ipairs s.actors-to-spawn)]
+    (table.insert s.actors actor)
+    (set s.actors-to-spawn []))
   (when (> s.delta-time 0)
     (set s.elapsed-time (+ s.delta-time s.elapsed-time))
     (dungeon.update-actors s s.delta-time)
@@ -186,7 +191,7 @@
      (error (.. "Unknown Actor kind" kind)))))
 
 (fn dungeon.insert-actor [s {: kind &as props}]
-  (table.insert s.actors props)
+  (table.insert s.actors-to-spawn props)
   (if
    (= kind :player)
    (set s.player props))
@@ -280,7 +285,7 @@
      :bullet
      (do
        (love.graphics.setColor actor.color)
-       (dungeon.draw-ray actor.pos [actor.angle (/ actor.speed 60)]))
+       (dungeon.draw-ray actor.pos [actor.angle (/ actor.speed -60)]))
      :particle
      (do
        (love.graphics.setColor actor.color)
