@@ -18,7 +18,7 @@
     (values
      map
      (icollect [_ [kind] (ipairs enemy-list)]
-       [kind (mapgen.random-point-in-polygon map map-rect)]))))
+       [kind [(mapgen.random-point-in-polygon map map-rect)]]))))
 
 (fn mapgen.random-polygons []
   (var polygons [])
@@ -63,7 +63,7 @@
   (let [rect (or ?rect (mapgen.polygon-bounding-box polygon))
         point [(mapgen.random-point-in-rect (unpack rect))]]
     (if (geom.point-in-polygon? point polygon)
-        point
+        (unpack point)
         (mapgen.random-point-in-polygon polygon rect))))
 
 (fn mapgen.join-polygons [...]
@@ -78,8 +78,8 @@
   poly-out)
 
 (fn mapgen.try-join-2-polygons [poly1 poly2]
-  (let [point1 (mapgen.random-point-in-polygon poly1)
-        point2 (mapgen.random-point-in-polygon poly2)
+  (let [point1 [(mapgen.random-point-in-polygon poly1)]
+        point2 [(mapgen.random-point-in-polygon poly2)]
         lineseg [point1 point2]
         (_ _ vindex1) (geom.lineseg-polygon-intersection lineseg poly1)
         (_ _ vindex2) (geom.lineseg-polygon-intersection lineseg poly2)
