@@ -9,13 +9,36 @@
 (set geom.FAR 99999999) ;; arbitrary big number which must be larger than
                         ;; the largest map size
 
+(local pi math.pi)
+(local tau (* 2 pi))
+
 (fn geom.angle [x y]
   ;; get the angle of point x,y from 0,0
   (math.atan2 y x))
 
+(fn geom.angle-to-signed [angle]
+  ;; given any angle, convert it to the range -pi to pi
+  (let [angle (% angle tau)]
+    (if (> angle pi)
+        (- angle tau)
+        angle)))
+
+(fn geom.angle-of-vertex [p1 p2 p3]
+  ;; test how far apart a given vertex is, defined by 3 points
+  (let [a1 (geom.angle (vec2-op - p2 p1))
+        a2 (geom.angle (vec2-op - p2 p3))]
+    (geom.angle-to-signed (- a1 a2))))
+
 (fn geom.distance [x y]
   ;; get the distance of point x,y from 0,0
   (^ (+ (^ y 2) (^ x 2)) 0.5))
+
+(fn geom.rect-in-rect? [[x1 y1 x2 y2] [x3 y3 x4 y4]]
+  (let [w (+ (- x2 x1) (- x4 x3))
+        h (+ (- y2 y1) (- y4 y3))
+        dx (math.abs (- (+ x1 x2) (+ x3 x4)))
+        dy (math.abs (- (+ y1 y2) (+ y3 y4)))]
+    (and (< dx w) (< dy h))))
 
 (fn geom.rectangular->polar [x y]
   (values
@@ -33,7 +56,7 @@
       [(vec2-op +
                 origin
                 [(geom.polar->rectangular
-                  (+ angle (* 2 math.pi (/ i sides)))
+                  (+ angle (* 2 pi (/ i sides)))
                   size)])])))
 
 (fn geom.points->ray [a b]
@@ -74,7 +97,7 @@
    ;; parallel
    (= s1 s2)
    (if (geom.approx-eq y1 y2)
-       (error "Attempt to find intersection of equal lines")
+       (values (/ 0 0) (/ 0 0)) ; totally unknown, but they do intersect lmao
        false)
    ;; vertical (can't detect based on slope-intercept ...)
    (or (geom.infinite? s1) (geom.infinite? s2))
@@ -113,7 +136,7 @@
           (unpack isect-point)))))
 
 (fn geom.lineseg-polygon-intersection [lineseg polygon]
-  ; return the x, y, and index of the face that intersects
+  ; return the x, y, and index of the first face that intersects
   (unpack
      (faccumulate [intersection []
                    i 1 (length polygon)
@@ -122,6 +145,14 @@
             q2 (. polygon (+ 1 (% i (length polygon))))
             isect-point [(geom.lineseg-lineseg-intersection lineseg [q1 q2])]]
         [(. isect-point 1) (. isect-point 2) i]))))
+
+(fn geom.lineseg-polygon-intersection-map [lineseg polygon]
+  ; returns a list of whether or not each edge intersects
+  (fcollect [i 1 (length polygon)]
+   (let [q1 (. polygon i)
+         q2 (. polygon (+ 1 (% i (length polygon))))
+         isect? (geom.lineseg-lineseg-intersection lineseg [q1 q2])]
+     (if isect? true false))))
 
 (fn geom.point-circle-intersection [point [origin radius]]
   (if (< (geom.distance (vec2-op - point origin)) radius)
@@ -196,16 +227,49 @@
                    0)))))]
     (= 1 (% cross-count 2))))
 
-(fn geom.approx-eq [a b]
-  (>= (* (math.max a b) (^ 2 -30)) (math.abs (- a b))))
+(fn geom.polygon-valid? [polygon ?min-angle]
+  ;; validate that a polygon has more than 2 points, no internal crossings, and
+  ;; no angles less than min-angle.
+  (and
+   (> (length polygon) 2) ; polygon must have 3 or more points
+   (accumulate [valid true
+                _ [x y] (ipairs polygon)
+                &until (not valid)]
+     (and (geom.real? x)
+          (geom.real? y)))
+   (faccumulate [valid true
+                 i 1 (length polygon)
+                 &until (not valid)]
+     ;; ... which can't intersect with any non-adjacent segments
+     (let [min-angle (or ?min-angle (/ tau 360)) ; default 1 degree
+           i0 (if (= i 1) (length polygon) (- i 1))
+           i1 i
+           i2 (+ 1 (% i (length polygon)))
+           q0 (. polygon i0)
+           q1 (. polygon i1)
+           q2 (. polygon i2)
+           map (geom.lineseg-polygon-intersection-map [q1 q2] polygon)]
+       (faccumulate [valid true
+                     j (+ i 1) (length polygon)
+                     &until (not valid)]
+         (and
+          (<= min-angle (math.abs (geom.angle-of-vertex q0 q1 q2)))
+          (not (geom.vec-eq q1 (. polygon j))) ; same point can't exist twice
+          (or (= j i0) (= j i1) (= j i2) (= (. map j) false))))))))
 
-(fn geom.nan? [x] (not= x x))
+(fn geom.approx-eq [a b]
+  (>= (^ 2 -26) (math.abs (- a b))))
 
 (fn geom.vec-eq [[x1 y1] [x2 y2]]
   (and (geom.approx-eq x1 x2)
        (geom.approx-eq y1 y2)))
 
+(fn geom.nan? [x] (not= x x))
+
 (fn geom.infinite? [x]
   (or (>= x geom.FAR) (<= x (- geom.FAR))))
+
+(fn geom.real? [x]
+  (not (or (geom.nan? x) (geom.infinite? x))))
 
 geom
