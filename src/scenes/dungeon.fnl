@@ -77,6 +77,20 @@
         (let [step-vec [(geom.polar->rectangular angle step)]]
           [(vec2-op - a step-vec)]))))
 
+(fn dungeon.spawn-particles [s kind ...]
+  (case kind
+    :circle
+     (let [(pos props) ...
+           count (or props.count 20)
+           color (or props.color [1 1 1 1])
+           lifetime 100
+           speed (or props.speed 5)]
+       (tset color 4 0.5)
+       (for [i 1 count]
+         (dungeon.spawn-actor s :particle pos i {: color
+                                                 : lifetime
+                                                 :speed (* speed (+ 1 (math.random)))})))))
+
 (fn dungeon.spawn-actor [s kind ...]
   (dungeon.insert-actor s
    (case kind
@@ -120,13 +134,13 @@
          :atk 5
          :speed 2})
      :particle
-     (let [(pos angle expiry) ...]
+     (let [(pos angle props) ...]
        {: kind
         : angle
         : pos
-        : expiry
-        :color [0 1 1 .5]
-        :speed .5})
+        :color props.color
+        :expiry (+ s.elapsed-time props.lifetime)
+        :speed props.speed})
      :killer-tomato
      (let [pos ...]
        {: kind
@@ -182,18 +196,7 @@
         (let [step [(geom.polar->rectangular
                      actor.angle
                      (* dt actor.speed))]
-              next-pos [(vec2-op + actor.pos step)]
-              movement-lineseg [actor.pos next-pos]
-              collision-point [(geom.lineseg-polygon-intersection
-                                movement-lineseg
-                                s.level-border)]]
-          (when (. collision-point 1)
-              (dungeon.delete-actor s actor))
-          (each [_ other (ipairs s.actors)]
-            (when (and other.hitbox
-                       (geom.lineseg-in-circle? movement-lineseg
-                                                [other.pos other.hitbox.size]))
-                (dungeon.delete-actor s actor)))
+              next-pos [(vec2-op + actor.pos step)]]
           (set actor.pos next-pos)
           (when (< actor.expiry s.elapsed-time)
             (dungeon.delete-actor s actor))))
@@ -290,8 +293,7 @@
   (when actor.hp
     (set actor.hp (- actor.hp atk))
     (when (< actor.hp 0)
-      (for [i 0 359 15]
-        (dungeon.spawn-actor s :particle actor.pos i (+ s.elapsed-time 50)))
+      (dungeon.spawn-particles s :circle actor.pos {:color actor.color :count 20})
       (dungeon.delete-actor s actor))))
 
 dungeon
