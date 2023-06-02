@@ -91,9 +91,10 @@
            speed (or props.speed 5)]
        (tset color 4 0.5)
        (for [i 1 count]
-         (dungeon.spawn-actor s :particle pos i {: color
-                                                 : lifetime
-                                                 :speed (* speed (+ 1 (math.random)))})))))
+         (dungeon.spawn-actor s :particle pos i
+                              {: color
+                               : lifetime
+                               :speed (* speed (+ 1 (math.random)))})))))
 
 (fn dungeon.spawn-actor [s kind ...]
   (dungeon.insert-actor s
