@@ -131,5 +131,13 @@
   (lu.assertEvalToFalse (geom.polygon-valid? huh))
   (lu.assertEvalToFalse (geom.polygon-valid? infinite))
   (lu.assertEvalToFalse (geom.polygon-valid? non-number)))
+
+(fn TestGeom.test_rect_in_rect []
+  (lu.assertEvalToTrue (geom.rect-in-rect? [0 0 2 2] [1 1 3 3]))
+  (lu.assertEvalToTrue (geom.rect-in-rect? [0 0 2 2] [1 0 3 2]))
+  (lu.assertEvalToTrue (geom.rect-in-rect? [0 0 2 2] [0 1 2 3]))
+  (lu.assertEvalToFalse (geom.rect-in-rect? [0 0 2 2] [0 3 2 5]))
+  (lu.assertEvalToFalse (geom.rect-in-rect? [0 0 2 2] [3 0 5 2])))
+
 (set _G.TestGeom TestGeom)
 TestGeom

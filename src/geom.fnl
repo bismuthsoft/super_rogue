@@ -17,6 +17,13 @@
   ;; get the distance of point x,y from 0,0
   (^ (+ (^ y 2) (^ x 2)) 0.5))
 
+(fn geom.rect-in-rect? [[x1 y1 x2 y2] [x3 y3 x4 y4]]
+  (let [w (+ (- x2 x1) (- x4 x3))
+        h (+ (- y2 y1) (- y4 y3))
+        dx (math.abs (- (+ x1 x2) (+ x3 x4)))
+        dy (math.abs (- (+ y1 y2) (+ y3 y4)))]
+    (and (< dx w) (< dy h))))
+
 (fn geom.rectangular->polar [x y]
   (values
    (geom.angle x y)
