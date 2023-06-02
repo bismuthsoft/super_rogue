@@ -88,7 +88,8 @@
                      (lume.slice poly2 (+ 1 vindex2))
                      (lume.slice poly2 1 vindex2)
                      (lume.slice poly1 (+ 1 vindex1)))
-        valid (geom.polygon-valid? polygon-out)]
+        min-angle (/ math.pi 36) ; no angles less than 5 degrees
+        valid (geom.polygon-valid? polygon-out (/ math.pi 90))]
     (and valid polygon-out)))
 
 mapgen
