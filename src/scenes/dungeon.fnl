@@ -32,7 +32,8 @@
     (set s.delta-time 0)))
 
 (fn dungeon.draw [s]
-  (love.graphics.setColor 1 1 1 1)
+  (love.graphics.setColor 1 1 1 0.7)
+  (love.graphics.setLineWidth 2)
   (dungeon.draw-polygon s.level-border)
   (dungeon.draw-actors s)
 
@@ -45,13 +46,15 @@
 (fn dungeon.keypressed [s keycode scancode]
   ;; DEBUG
   (when (= scancode :f5)
-      (tset package.loaded :mapgen nil)
-      (let [(status err) (pcall
-                          (lambda []
-                            (set mapgen (require :mapgen))
-                            (dungeon.next-level s)))]
-        (if (= status false)
-            (print (.. "ERROR: failed to reload map. " err))))))
+        (tset package.loaded :mapgen nil)
+        (let [(status err) (pcall
+                            (lambda []
+                              (set mapgen (require :mapgen))
+                              (dungeon.next-level s)))]
+          (if (= status false)
+              (print (.. "ERROR: failed to reload map. " err)))))
+  (when (= scancode :f6)
+    (pp s.level-border)))
 
 (fn dungeon.mousepressed [s x y button]
   (when (> s.player.stamina s.player.bullet-stamina-cost)
@@ -91,9 +94,10 @@
            speed (or props.speed 5)]
        (tset color 4 0.5)
        (for [i 1 count]
-         (dungeon.spawn-actor s :particle pos i {: color
-                                                 : lifetime
-                                                 :speed (* speed (+ 1 (math.random)))})))))
+         (dungeon.spawn-actor s :particle pos i
+                              {: color
+                               : lifetime
+                               :speed (* speed (+ 1 (math.random)))})))))
 
 (fn dungeon.spawn-actor [s kind ...]
   (dungeon.insert-actor s
