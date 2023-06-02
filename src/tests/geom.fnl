@@ -38,7 +38,8 @@
                       [[-1 -1] [1 1]]
                       [[1 -1] [-1 1]])]
                    [0 0])
-  (lu.assertEvalToTrue (geom.lineseg-lineseg-intersection [[250 600] [250 40]] [[100 350] [300 350]])) ;; this case seems problematic
+  (lu.assertEvalToTrue (geom.lineseg-lineseg-intersection [[250 600] [250 40]] [[100 350] [300 350]]))
+  (lu.assertEvalToFalse (geom.lineseg-lineseg-intersection [[1 -1] [1 1]] [[-1 1] [-1 -1]]))
   (lu.assertEquals [(geom.lineseg-lineseg-intersection ;; vertical
                       [[0 0] [0 2]]
                       [[-1 1] [1 1]])] [0 1])
@@ -111,5 +112,24 @@
   (lu.assertEvalToFalse (geom.lineseg-in-circle? [[0 0] [0 1]] [[2 0] 1]))
   (lu.assertEvalToFalse (geom.lineseg-in-circle? [[0 0] [1 0]] [[0 2] 1])))
 
+(fn TestGeom.test_polygon_validity []
+  (local square [[-1 -1] [1 -1] [1 1] [-1 1]])
+  (local triangle [[250 559.80762113533]
+                   [250 40.192378864669]
+                   [700 300]])
+  (local line [[0 0] [0 1]])  ; not a polygon
+  (local bowtie [[0 0] [0 1] [1 0] [1 1]]) ; self-intersection
+  (local M [[0 0] [0 1] [1 0] [2 1] [2 0]])  ; self-perpendicular
+  (local huh [[0 0] [0 0] [0 0]])  ; self-intersection (wonky)
+  (local infinite [[0 0] [0 1] [(/ 1 0) 0]])  ; lol no
+  (local non-number [[0 0] [0 1] [(/ 0 0) 0]])   ; lol no
+  (lu.assertEvalToTrue (geom.polygon-valid? square))
+  (lu.assertEvalToTrue (geom.polygon-valid? triangle))
+  (lu.assertEvalToFalse (geom.polygon-valid? line))
+  (lu.assertEvalToFalse (geom.polygon-valid? bowtie))
+  (lu.assertEvalToFalse (geom.polygon-valid? M))
+  (lu.assertEvalToFalse (geom.polygon-valid? huh))
+  (lu.assertEvalToFalse (geom.polygon-valid? infinite))
+  (lu.assertEvalToFalse (geom.polygon-valid? non-number)))
 (set _G.TestGeom TestGeom)
 TestGeom

@@ -74,7 +74,7 @@
    ;; parallel
    (= s1 s2)
    (if (geom.approx-eq y1 y2)
-       (error "Attempt to find intersection of equal lines")
+       (values (/ 0 0) (/ 0 0)) ; totally unknown, but they do intersect lmao
        false)
    ;; vertical (can't detect based on slope-intercept ...)
    (or (geom.infinite? s1) (geom.infinite? s2))
@@ -113,7 +113,7 @@
           (unpack isect-point)))))
 
 (fn geom.lineseg-polygon-intersection [lineseg polygon]
-  ; return the x, y, and index of the face that intersects
+  ; return the x, y, and index of the first face that intersects
   (unpack
      (faccumulate [intersection []
                    i 1 (length polygon)
@@ -122,6 +122,14 @@
             q2 (. polygon (+ 1 (% i (length polygon))))
             isect-point [(geom.lineseg-lineseg-intersection lineseg [q1 q2])]]
         [(. isect-point 1) (. isect-point 2) i]))))
+
+(fn geom.lineseg-polygon-intersection-map [lineseg polygon]
+  ; returns a list of whether or not each edge intersects
+  (fcollect [i 1 (length polygon)]
+   (let [q1 (. polygon i)
+         q2 (. polygon (+ 1 (% i (length polygon))))
+         isect? (geom.lineseg-lineseg-intersection lineseg [q1 q2])]
+     (if isect? true false))))
 
 (fn geom.point-circle-intersection [point [origin radius]]
   (if (< (geom.distance (vec2-op - point origin)) radius)
@@ -196,16 +204,44 @@
                    0)))))]
     (= 1 (% cross-count 2))))
 
-(fn geom.approx-eq [a b]
-  (>= (* (math.max a b) (^ 2 -30)) (math.abs (- a b))))
+(fn geom.polygon-valid? [polygon]
+  (and
+   (> (length polygon) 2) ; polygon must have 3 or more points
+   (accumulate [valid true
+                _ [x y] (ipairs polygon)
+                &until (not valid)]
+     (and (geom.real? x)
+          (geom.real? y)))
+   (faccumulate [valid true
+                 i 1 (length polygon)
+                 &until (not valid)]
+     ;; ... which can't intersect with any non-adjacent segments
+     (let [i0 (if (= i 1) (length polygon) (- i 1))
+           i1 i
+           i2 (+ 1 (% i (length polygon)))
+           q1 (. polygon i1)
+           q2 (. polygon i2)
+           map (geom.lineseg-polygon-intersection-map [q1 q2] polygon)]
+       (faccumulate [valid true
+                     j (+ i 1) (length polygon)
+                     &until (not valid)]
+         (and
+          (not (geom.vec-eq q1 (. polygon j))) ; same point can't exist twice
+          (or (= j i0) (= j i1) (= j i2) (= (. map j) false))))))))
 
-(fn geom.nan? [x] (not= x x))
+(fn geom.approx-eq [a b]
+  (>= (^ 2 -26) (math.abs (- a b))))
 
 (fn geom.vec-eq [[x1 y1] [x2 y2]]
   (and (geom.approx-eq x1 x2)
        (geom.approx-eq y1 y2)))
 
+(fn geom.nan? [x] (not= x x))
+
 (fn geom.infinite? [x]
   (or (>= x geom.FAR) (<= x (- geom.FAR))))
+
+(fn geom.real? [x]
+  (not (or (geom.nan? x) (geom.infinite? x))))
 
 geom
