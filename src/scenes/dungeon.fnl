@@ -115,12 +115,17 @@
 (fn dungeon.freeze-player [s duration]
   (set s.freeze-player-until (+ s.elapsed-time duration)))
 
-(fn dungeon.actor-step-forward [actor dt]
+(fn dungeon.actor-step-forward [actor dt ?level-boundary]
   (let [step [(geom.polar->rectangular
                actor.angle
                (* dt actor.speed))]
-        next-pos [(vec2-op + actor.pos step)]]
-    (set actor.pos next-pos)))
+        next-pos [(vec2-op + actor.pos step)]
+        in-bounds (or (not ?level-boundary)
+                      (geom.point-in-polygon? next-pos ?level-boundary))]
+    (when in-bounds
+      (do
+        (set actor.pos next-pos)
+        true))))
 
 (fn dungeon.actor-try-stamina-action [actor cost action ...]
   (when (> actor.stamina cost)
@@ -247,6 +252,9 @@
         :hp 1
         :max-hp 1
         :atk 2
+        :speed 50
+        :angle 0
+        :ai {:kind :random}
         :hitbox {:size 4 :shape :circle}})
      _
      (error (.. "Unknown Actor kind" kind)))))
@@ -272,15 +280,33 @@
 
 (fn dungeon.update-actors [s dt]
   (each [i {: kind &as actor} (ipairs s.actors)]
+    ;; hitboxes
     (when (and actor.hitbox actor.atk)
       (each [_ other (ipairs s.actors)]
         (when (and other.hitbox
                    (not= actor.friendly? other.friendly?)
                    (collide.actors-collide? actor other))
           (dungeon.damage-actor s other (* actor.atk dt)))))
+
+    ;; automatic death
     (when (and actor.expiry
                (< actor.expiry s.elapsed-time))
       (dungeon.delete-actor s actor))
+
+    ;; ai
+    (local ai actor.ai)
+    (case (?. ai :kind)
+      :random
+      (do
+        (let [did-step (dungeon.actor-step-forward actor dt s.level-border)]
+          (when (or (not did-step)
+                    (not ai.target)
+                    (> s.elapsed-time ai.next-target-time))
+            (set ai.target [(mapgen.random-point-in-polygon s.level-border)])
+            (set ai.next-target-time (+ s.elapsed-time (love.math.random)))
+            (dungeon.actor-look-at-pos actor (unpack ai.target))))))
+
+    ;; dedicated update code
     (case kind
       :player
       (do
