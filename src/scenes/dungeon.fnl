@@ -31,8 +31,8 @@
 
 (fn dungeon.update [s dt]
   (match s.time-til-menu
-    (where ttm (< ttm s.elapsed-time)) (scene.pop)
-    (where ttm) (set s.delta-time (+ s.delta-time (* 10 dt))))
+    (where ttm (< ttm s.elapsed-time)) (scene.set :menu)
+    (where ttm) (set s.delta-time dt))
 
   ;; add actors
   (each [_ actor (ipairs s.actors-to-spawn)]
@@ -40,7 +40,7 @@
     (set s.actors-to-spawn []))
 
   (if
-   (> s.freeze-player-until s.elapsed-time)
+   (or (> s.freeze-player-until s.elapsed-time) s.time-til-menu)
    (do                                  ; realtime mode
       (set s.elapsed-time (+ dt s.elapsed-time))
       (dungeon.update-actors s dt))
@@ -267,8 +267,6 @@
   props)
 
 (fn dungeon.delete-actor [s actor]
-  (if (= actor s.player)
-      (scene.set :menu))
   (tset s.will-delete actor true))
 
 (fn dungeon.update-actors [s dt]
@@ -409,7 +407,7 @@
     (when (< actor.hp 0)
       (dungeon.spawn-particles s :circle actor.pos {:color actor.color :count 20})
       (match actor.kind
-        :player (set s.time-til-menu (+ s.elapsed-time 50)))
+        :player (set s.time-til-menu (+ s.elapsed-time 2)))
       (dungeon.delete-actor s actor))))
 
 dungeon
