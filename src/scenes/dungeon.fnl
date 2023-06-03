@@ -378,6 +378,7 @@
       :circle
       (do
         (love.graphics.setColor [1 1 1 0.2])
+        (love.graphics.setLineWidth 2)
         (love.graphics.circle :line x y actor.hitbox.size))
       :line
       (do
