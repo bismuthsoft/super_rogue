@@ -12,10 +12,20 @@
 (fn help.size [s ...]
   (dungeon.size s.dungeon-state))
 
+(local
+ HELP-ENTRIES
+ [["/, ?, or F1" "This help menu"]
+  ["Spacebar" "Melee attack"]
+  ["Right Mouse button" "Melee attack"]
+  ["Left mouse button" "Fire projectile"]
+  ["K, W, or Up" "Move up"]
+  ["H, A, or Left" "Move left"]
+  ["J, S, or Down" "Move down"]
+  ["L, D, or Right" "Move right"]
+  ["Tab or ." "Wait"]])
+
 (fn help.draw [s]
-  (love.graphics.push)
   (dungeon.draw s.dungeon-state)
-  (love.graphics.pop)
-  (draw.help (help.size s)))
+  (draw.help HELP-ENTRIES (help.size s)))
 
 help
