@@ -199,6 +199,7 @@
         (dungeon.spawn-actor s :particle pos i
                              {: color
                               : lifetime
+                              :show-line {: color :len (/ speed 30)}
                               :speed (* speed (+ 1 (math.random)))})))
     :damage-number
     (let [(pos friendly? atk) ...
@@ -237,6 +238,8 @@
         :melee-stamina-cost 3
         :melee-atk 10
         :hitbox {:size 8 :shape :circle}
+        :show-line {:color [1 1 1 0.3]
+                    :len 100}
         :meters {:health
                  {:pos [20 560]
                   :size [100 20]
@@ -257,6 +260,7 @@
          : pos
          : angle
          :color [1 0 0]
+         :show-line {:color [1 0 0] :len 6}
          : atk
          :speed 300})
      :sword
@@ -285,6 +289,7 @@
         :color props.color
         :char props.char
         :char-scale props.char-scale
+        :show-line props.show-line
         :expiry (+ s.elapsed-time props.lifetime)
         :speed props.speed})
      :killer-tomato
@@ -465,16 +470,14 @@
                       [(vec2-op + actor.pos [0 -10])]
                       meter.pos)]
           (draw.progress [pos meter.size] (/ value max) meter.color))))
+    (match actor.show-line
+      (where {: color : len})
+      (draw.ray actor.pos [actor.angle len] 1 color)
+      some_other
+      (do
+        (print (.. "Warning: invalid line for " actor.kind ": "))
+        (pp some_other)))
     (case kind
-     :player
-     (do
-       (draw.ray actor.pos [actor.angle 100] 1 [1 1 1 0.3]))
-     :bullet
-     (do
-       (draw.ray actor.pos [actor.angle (/ actor.speed -60)] 1 actor.color))
-     :particle
-     (do
-       (draw.ray actor.pos [actor.angle (/ actor.speed 60)] 1 actor.color))
      :sword
      (do
        (love.graphics.setColor actor.color)
