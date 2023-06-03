@@ -103,7 +103,12 @@
    s.player
    s.player.bullet-stamina-cost
    (lambda []
-     (dungeon.spawn-actor s :bullet s.player.pos s.player.angle true))))
+     (dungeon.spawn-actor s
+                          :bullet
+                          s.player.pos
+                          s.player.angle
+                          true
+                          s.player.bullet-atk))))
 
 (fn dungeon.move-player-to [s newpos]
   (set s.delta-time (+ s.delta-time
@@ -180,6 +185,7 @@
         :max-stamina 10
         :stamina-regen-rate 5
         :bullet-stamina-cost 8
+        :bullet-atk 5
         :melee-stamina-cost 3
         :melee-atk 10
         :hitbox {:size 8 :shape :circle}
@@ -197,13 +203,13 @@
                   :max-field :max-stamina
                   :color [0 .7 0 1]}}})
      :bullet
-     (let [(pos angle friendly?) ...]
+     (let [(pos angle friendly? atk) ...]
         {: kind
          : friendly?
          : pos
          : angle
          :color [1 0 0]
-         :atk 5
+         : atk
          :speed 300})
      :sword
      (let [(pos angle friendly? atk props) ...
