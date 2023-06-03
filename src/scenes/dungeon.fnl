@@ -22,7 +22,8 @@
   (set s.level (+ s.level 1))
   (set s.actors [])
   (set s.actors-to-spawn [])
-  (set s.actors-hurt {}) ;; list of hurt actors -- for animation
+  (set s.hurt-tallies {}) ;; list of hurt actors, keyed by table (for animation)
+  (set s.hurt-timers {})  ;; list of timers to show that the current attack has ended
   (set s.will-delete {})
   (set s.elapsed-time 0)
   (set s.delta-time 0)
@@ -38,12 +39,24 @@
     (where ttm (< ttm s.elapsed-time)) (scene.set :menu)
     (where ttm) (set s.delta-time dt))
 
-  (set s.actors-hurt {})
-
   ;; add actors
   (each [_ actor (ipairs s.actors-to-spawn)]
     (table.insert s.actors actor)
     (set s.actors-to-spawn []))
+
+  ;; look at damage tallies, spawn particles
+  (each [actor time (pairs s.hurt-timers)]
+    (let [time (- time dt)
+          time (if (< time 0) nil time)]
+      (tset s.hurt-timers actor time)
+      (when (not time)
+        (dungeon.spawn-particles
+         s
+         :damage-number
+         actor.pos
+         actor.friendly?
+         (. s.hurt-tallies actor))
+        (tset s.hurt-tallies actor nil))))
 
   (if
    (or (> s.freeze-player-until s.elapsed-time) s.time-til-menu)
@@ -180,13 +193,26 @@
     (let [(pos props) ...
           count (or props.count 20)
           color (or props.color [1 1 1 1])
-          lifetime 100
+          lifetime 3
           speed (or props.speed 500)]
       (for [i 1 count]
         (dungeon.spawn-actor s :particle pos i
                              {: color
                               : lifetime
-                              :speed (* speed (+ 1 (math.random)))})))))
+                              :speed (* speed (+ 1 (math.random)))})))
+    :damage-number
+    (let [(pos friendly? atk) ...
+          random-offset (lambda [] (- (* (math.random) 20) 10))
+          pos [(vec2-op + pos [(random-offset) (random-offset)])]
+          num (if (< atk 1)
+                  (.. "." (math.floor (* atk 10)))
+                  (math.floor atk))]
+      (dungeon.spawn-actor s :particle pos (/ math.pi -2)
+                           {:color (if friendly? [1 0.5 0.5 1] [1 0 0 1])
+                            :lifetime 1
+                            :speed 30
+                            :char num
+                            :char-scale 0.5}))))
 
 (fn dungeon.spawn-actor [s kind ...]
   (dungeon.insert-actor s
@@ -257,6 +283,8 @@
         : angle
         : pos
         :color props.color
+        :char props.char
+        :char-scale props.char-scale
         :expiry (+ s.elapsed-time props.lifetime)
         :speed props.speed})
      :killer-tomato
@@ -310,7 +338,8 @@
 (fn dungeon.damage-actor [s actor atk]
   (when actor.hp
     (set actor.hp (- actor.hp atk))
-    (tset s.actors-hurt actor true)
+    (tset s.hurt-tallies actor (+ (or (. s.hurt-tallies actor) 0) atk))
+    (tset s.hurt-timers actor (/ 1 20))
     (when (< actor.hp 0)
       (dungeon.spawn-particles s :circle actor.pos {:color actor.color :count 20})
       (match actor.kind
@@ -412,7 +441,7 @@
     (case (?. actor :hitbox :shape)
       :circle
       (do
-        (love.graphics.setColor (if (. s.actors-hurt actor)
+        (love.graphics.setColor (if (. s.hurt-tallies actor)
                                     [1 0 0 1]
                                     [1 1 1 0.2]))
         (love.graphics.setLineWidth 2)
@@ -426,7 +455,8 @@
                      [1 0 0 1]))
     (when actor.char
       (love.graphics.setColor actor.color)
-      (love.graphics.printf actor.char x y 21 :center 0 1 1 10 11))
+      (local s (or actor.char-scale 1))
+      (love.graphics.printf actor.char x y 51 :center 0 s s 25 11))
     (when actor.meters
       (each [_ meter (pairs actor.meters)]
         (let [value (. actor meter.value-field)
