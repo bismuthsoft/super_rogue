@@ -70,33 +70,44 @@
   (set s.player.angle (geom.angle (vec2-op - [x y] s.player.pos))))
 
 (fn dungeon.keypressed [s keycode scancode]
-  (when (= scancode :space)
-    (dungeon.actor-try-stamina-action
-     s.player
-     s.player.melee-stamina-cost
-     (lambda []
-       (dungeon.freeze-player s 0.2)
-       (dungeon.spawn-actor
-        s
-        :sword
-        s.player.pos
-        s.player.angle
-        true
-        s.player.melee-atk
-        {:duration 0.2}))))
-  ;; DEBUG
-  (when (= scancode :f5)
-        (tset package.loaded :mapgen nil)
-        (let [(status err) (pcall
-                            (lambda []
-                              (set mapgen (require :mapgen))
-                              (dungeon.next-level s)))]
-          (if (= status false)
-              (print (.. "ERROR: failed to reload map. " err)))))
-  (when (= scancode :f6)
+  (match scancode
+    :tab
+    (set s.freeze-player-until (+ s.elapsed-time 0.5))
+    "."
+    (set s.freeze-player-until (+ s.elapsed-time 0.5))
+    :space
+    (dungeon.swing-player-sword s)
+    ;; DEBUG
+    :f5
+    (do
+      (tset package.loaded :mapgen nil)
+      (let [(status err) (pcall
+                          (lambda []
+                            (set mapgen (require :mapgen))
+                            (dungeon.next-level s)))]
+        (if (= status false)
+            (print (.. "ERROR: failed to reload map. " err)))))
+    :f6
     (pp s.level-border)))
 
 (fn dungeon.mousepressed [s x y button]
+  (match button
+   1
+     (dungeon.fire-player-bullet s)
+   2
+     (dungeon.swing-player-sword s)))
+
+(fn dungeon.move-player-to [s newpos]
+  (set s.delta-time (+ s.delta-time
+                       (/ (geom.distance (vec2-op - newpos s.player.pos))
+                          s.player.speed)))
+  (dungeon.actor-look-at-pos s.player (love.mouse.getPosition))
+  (set s.player.pos newpos))
+
+(fn dungeon.freeze-player [s duration]
+  (set s.freeze-player-until (+ s.elapsed-time duration)))
+
+(fn dungeon.fire-player-bullet [s]
   (dungeon.actor-try-stamina-action
    s.player
    s.player.bullet-stamina-cost
@@ -108,15 +119,20 @@
                           true
                           s.player.bullet-atk))))
 
-(fn dungeon.move-player-to [s newpos]
-  (set s.delta-time (+ s.delta-time
-                       (/ (geom.distance (vec2-op - newpos s.player.pos))
-                          s.player.speed)))
-  (dungeon.actor-look-at-pos s.player (love.mouse.getPosition))
-  (set s.player.pos newpos))
-
-(fn dungeon.freeze-player [s duration]
-  (set s.freeze-player-until (+ s.elapsed-time duration)))
+(fn dungeon.swing-player-sword [s]
+  (dungeon.actor-try-stamina-action
+   s.player
+   s.player.melee-stamina-cost
+   (lambda []
+     (dungeon.freeze-player s 0.2)
+     (dungeon.spawn-actor
+      s
+      :sword
+      s.player.pos
+      s.player.angle
+      true
+      s.player.melee-atk
+      {:duration 0.2}))))
 
 (fn dungeon.actor-step-forward [actor dt ?level-boundary]
   (let [step [(geom.polar->rectangular
