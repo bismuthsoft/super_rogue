@@ -15,6 +15,9 @@
     (dungeon.next-level state)
     state))
 
+(fn dungeon.size [s]
+  (values 800 600))
+
 (fn dungeon.next-level [s]
   (set s.level (+ s.level 1))
   (set s.actors [])
@@ -24,7 +27,7 @@
   (set s.delta-time 0)
   (set s.time-til-menu nil)
   (set s.freeze-player-until -100000)
-  (let [(polygon actors) (mapgen.generate-level s.level)]
+  (let [(polygon actors) (mapgen.generate-level s.level (dungeon.size s))]
     (set s.level-border polygon)
     (each [_ args (ipairs actors)]
       (dungeon.spawn-actor s (unpack args)))))
@@ -101,7 +104,7 @@
   (set s.delta-time (+ s.delta-time
                        (/ (geom.distance (vec2-op - newpos s.player.pos))
                           s.player.speed)))
-  (dungeon.actor-look-at-pos s.player (love.mouse.getPosition))
+  (dungeon.actor-look-at-pos s.player (scene.get-mouse-position))
   (set s.player.pos newpos))
 
 (fn dungeon.freeze-player [s duration]

@@ -15,6 +15,9 @@
 (fn menu.update [s dt]
   (do))
 
+(fn menu.size [s]
+  (values 800 600))
+
 (fn menu.draw [s]
   (love.graphics.print "Super Rogue" 300 100)
   (love.graphics.print "Press any key to play" 300 300))

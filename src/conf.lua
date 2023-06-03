@@ -11,5 +11,8 @@ function love.conf(t)
   end
   if t.window then
     t.window.title = "Super Rogue"
+    t.window.width = 800
+    t.window.height = 600
+    t.window.resizable = true
   end
 end
