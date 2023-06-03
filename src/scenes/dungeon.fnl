@@ -60,9 +60,7 @@
 
 
 (fn dungeon.draw [s]
-  (love.graphics.setColor 1 1 1 0.7)
-  (love.graphics.setLineWidth 2)
-  (draw.polygon s.level-border)
+  (draw.polygon s.level-border 2 [1 1 1 0.7])
   (dungeon.draw-actors s)
 
   (love.graphics.setColor [1 1 1 1])
@@ -159,7 +157,6 @@
           color (or props.color [1 1 1 1])
           lifetime 100
           speed (or props.speed 500)]
-      (tset color 4 0.5)
       (for [i 1 count]
         (dungeon.spawn-actor s :particle pos i
                              {: color

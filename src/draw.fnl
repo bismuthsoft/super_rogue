@@ -23,7 +23,17 @@
      (love.graphics.setLineWidth thickness)
      (love.graphics.line x y x2 y2))))
 
-(fn draw.polygon [polygon]
-  (love.graphics.polygon "line" (unpack (util.flatten polygon))))
+(fn draw.ray [[x y] [angle len] thickness color]
+  (let [(x2 y2) (vec2-op + [x y] [(geom.polar->rectangular angle len)])]
+   (with-graphics-context
+     (love.graphics.setColor color)
+     (love.graphics.setLineWidth thickness)
+     (love.graphics.line x y x2 y2))))
+
+(fn draw.polygon [polygon thickness color]
+  (with-graphics-context
+    (love.graphics.setColor color)
+    (love.graphics.setLineWidth thickness)
+    (love.graphics.polygon "line" (unpack (util.flatten polygon)))))
 
 draw
