@@ -6,28 +6,28 @@
 
 (local mapgen {})
 
-(fn mapgen.generate-level [level]
+(fn mapgen.generate-level [level w h]
   (local enemy-list
          [[:player]
           [:killer-tomato]
           [:grid-bug]
           [:grid-bug]
           [:grid-bug]])
-  (let [map (mapgen.join-polygons (unpack (mapgen.random-polygons)))
+  (let [map (mapgen.join-polygons (unpack (mapgen.random-polygons w h)))
         map-rect (mapgen.polygon-bounding-box map)]
     (values
      map
      (icollect [_ [kind] (ipairs enemy-list)]
-       [kind (mapgen.random-point-in-polygon map map-rect)]))))
+       [kind [(mapgen.random-point-in-polygon map map-rect)]]))))
 
-(fn mapgen.random-polygons []
+(fn mapgen.random-polygons [w h]
+  ;; w and h are maximum size
   (var polygons [])
   (for [i 1 100]
-    (let [(ssx ssy) (love.window.getMode)
-          margin 150
+    (let [margin 150
           next-poly (geom.polygon {:sides (love.math.random 3 12)
-                                   :origin [(love.math.random margin (- ssx margin))
-                                            (love.math.random margin (- ssy margin))]
+                                   :origin [(love.math.random margin (- w margin))
+                                            (love.math.random margin (- h margin))]
                                    :size (love.math.random 50 200)
                                    :angle (* 2 math.pi (love.math.random))})
           collision?
@@ -50,9 +50,6 @@
      (math.max max-x x)
      (math.max max-y y)]))
 
-(fn mapgen.random-point-in-screen []
-  (mapgen.random-point-in-rect 0 0 (love.graphics.getMode)))
-
 (fn mapgen.random-point-in-rect [x y x2 y2]
   (let [[w h] [(- x2 x) (- y2 y)]]
     (values
@@ -63,7 +60,7 @@
   (let [rect (or ?rect (mapgen.polygon-bounding-box polygon))
         point [(mapgen.random-point-in-rect (unpack rect))]]
     (if (geom.point-in-polygon? point polygon)
-        point
+        (unpack point)
         (mapgen.random-point-in-polygon polygon rect))))
 
 (fn mapgen.join-polygons [...]
@@ -78,8 +75,8 @@
   poly-out)
 
 (fn mapgen.try-join-2-polygons [poly1 poly2]
-  (let [point1 (mapgen.random-point-in-polygon poly1)
-        point2 (mapgen.random-point-in-polygon poly2)
+  (let [point1 [(mapgen.random-point-in-polygon poly1)]
+        point2 [(mapgen.random-point-in-polygon poly2)]
         lineseg [point1 point2]
         (_ _ vindex1) (geom.lineseg-polygon-intersection lineseg poly1)
         (_ _ vindex2) (geom.lineseg-polygon-intersection lineseg poly2)
