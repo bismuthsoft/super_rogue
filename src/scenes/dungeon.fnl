@@ -22,6 +22,7 @@
   (set s.level (+ s.level 1))
   (set s.actors [])
   (set s.actors-to-spawn [])
+  (set s.actors-hurt {}) ;; list of hurt actors -- for animation
   (set s.will-delete {})
   (set s.elapsed-time 0)
   (set s.delta-time 0)
@@ -36,6 +37,8 @@
   (match s.time-til-menu
     (where ttm (< ttm s.elapsed-time)) (scene.set :menu)
     (where ttm) (set s.delta-time dt))
+
+  (set s.actors-hurt {})
 
   ;; add actors
   (each [_ actor (ipairs s.actors-to-spawn)]
@@ -60,7 +63,6 @@
        (icollect [i actor (ipairs s.actors)]
          (if (. s.will-delete actor) nil actor)))
   (set s.will-delete {}))
-
 
 (fn dungeon.draw [s]
   (draw.polygon s.level-border 2 [1 1 1 0.7])
@@ -305,6 +307,16 @@
      _
      (error (.. "Unknown Actor kind" kind)))))
 
+(fn dungeon.damage-actor [s actor atk]
+  (when actor.hp
+    (set actor.hp (- actor.hp atk))
+    (tset s.actors-hurt actor true)
+    (when (< actor.hp 0)
+      (dungeon.spawn-particles s :circle actor.pos {:color actor.color :count 20})
+      (match actor.kind
+        :player (set s.time-til-menu (+ s.elapsed-time 2)))
+      (dungeon.delete-actor s actor))))
+
 (fn dungeon.insert-actor [s {: kind &as props}]
   (table.insert s.actors-to-spawn props)
   (if
@@ -400,7 +412,9 @@
     (case (?. actor :hitbox :shape)
       :circle
       (do
-        (love.graphics.setColor [1 1 1 0.2])
+        (love.graphics.setColor (if (. s.actors-hurt actor)
+                                    [1 0 0 1]
+                                    [1 1 1 0.2]))
         (love.graphics.setLineWidth 2)
         (love.graphics.circle :line x y (- actor.hitbox.size 1)))
       :line
@@ -464,14 +478,5 @@
                  next-pos [(vec2-op + offset s.player.pos)]]
              (if (geom.point-in-polygon? next-pos s.level-border)
                  (dungeon.move-player-to s next-pos)))))))
-
-(fn dungeon.damage-actor [s actor atk]
-  (when actor.hp
-    (set actor.hp (- actor.hp atk))
-    (when (< actor.hp 0)
-      (dungeon.spawn-particles s :circle actor.pos {:color actor.color :count 20})
-      (match actor.kind
-        :player (set s.time-til-menu (+ s.elapsed-time 2)))
-      (dungeon.delete-actor s actor))))
 
 dungeon
