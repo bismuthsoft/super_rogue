@@ -235,7 +235,7 @@
         :expiry (+ s.elapsed-time props.lifetime)
         :speed props.speed})
      :killer-tomato
-     (let [pos ...]
+     (let [(pos ?generation) ...]
        {: kind
         : pos
         :enemy? true
@@ -244,7 +244,27 @@
         :hp 3
         :max-hp 3
         :atk 6
-        :hitbox {:size 8 :shape :circle}})
+        :hitbox {:size 8 :shape :circle}
+        :generation (or ?generation 1)
+        :seed-timer nil
+        :seed-count 0})
+
+     :tomato-seed
+     (let [(pos generation) ...
+           seed {
+                 : pos
+                 :char "•"
+                 :color [0 1 0]
+                 :expiry (+ s.elapsed-time (+ 1 (math.random)))
+                 :on-expiry (fn [s actor]
+                              (dungeon.spawn-actor s
+                                                   :killer-tomato
+                                                   actor.pos
+                                                   generation))
+                 :speed 50}]
+       (dungeon.actor-look-at-pos seed (unpack s.player.pos))
+       (dungeon.actor-step-forward seed 1 s.level-boundary)
+       seed)
      :grid-bug
      (let [pos ...]
        {: kind
@@ -285,6 +305,7 @@
     ;; automatic death
     (when (and actor.expiry
                (< actor.expiry s.elapsed-time))
+      (when actor.on-expiry (actor.on-expiry s actor))
       (dungeon.delete-actor s actor))
 
     ;; ai
@@ -308,6 +329,21 @@
              (math.min
               s.player.max-stamina
               (+ s.player.stamina (* dt s.player.stamina-regen-rate)))))
+      :killer-tomato
+      (do
+        (if (and (< actor.generation 3)
+                 (< actor.hp actor.max-hp)
+                 (< actor.seed-count 3))
+            (if
+             (not actor.seed-timer)
+             (do
+               (set actor.seed-timer (+ s.elapsed-time
+                                        (/ (math.random 50 100) 128))))
+             (< actor.seed-timer s.elapsed-time)
+             (do
+               (set actor.seed-timer nil)
+               (set actor.seed-count (+ 1 actor.seed-count))
+               (dungeon.spawn-actor s :tomato-seed actor.pos (+ 1 actor.generation))))))
       :particle
       (do
         (dungeon.actor-step-forward actor dt))
