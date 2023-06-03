@@ -1,6 +1,7 @@
 (local draw {})
 (local geom (require :geom))
 (local util (require :util))
+(local lume (require :lib.lume))
 (import-macros {: vec2-op} :geom-macros)
 
 (macro with-graphics-context [body ...]
@@ -8,6 +9,13 @@
      (love.graphics.push "all")
      (let [out# (do ,body ,...)]
        (love.graphics.pop)
+       out#)))
+
+(macro with-canvas [id args body ...]
+  '(let [,id (love.graphics.newCanvas (unpack ,args))]
+     (love.graphics.setCanvas ,id)
+     (let [out# (do ,body ,...)]
+       (love.graphics.setCanvas)
        out#)))
 
 (fn draw.progress [[[x y] [w h]] percent color]
@@ -25,5 +33,37 @@
 
 (fn draw.polygon [polygon]
   (love.graphics.polygon "line" (unpack (util.flatten polygon))))
+
+(local
+ HELP-ENTRIES
+ [["/, ?, or F1" "This help menu"]
+  ["Spacebar" "Melee attack"]
+  ["Left mouse button" "Fire projectile"]
+  ["H or Left Arrow" "Move left"]
+  ["J or Down Arrow" "Move down"]
+  ["K or Up Arrow" "Move up"]
+  ["L or Right Arrow" "Move right"]])
+
+
+(fn draw.help []
+  (fn calc-y [index] (+ 50 (* index 25)))
+  (local w 450)
+  (local h (+ 50 (calc-y (length HELP-ENTRIES))))
+  (local canvas
+         (with-canvas c [w h]
+           (love.graphics.clear .1 .1 .1 .9)
+           (love.graphics.setColor [1 1 1 1])
+           (love.graphics.print "Help (press any key to close)" 25 25)
+           (each [i [input description] (ipairs HELP-ENTRIES)]
+             (local y (calc-y i))
+             (love.graphics.setColor (lume.color "#a020f0"))
+             (love.graphics.print input 25 y)
+             (love.graphics.setColor [.7 .7 .7 1])
+             (love.graphics.print description 250 y))
+           c))
+  (love.graphics.draw
+   canvas
+   (math.floor (/ (- (love.graphics.getWidth) w) 2))
+   (math.floor (/ (- (love.graphics.getHeight) h) 2))))
 
 draw

@@ -24,6 +24,12 @@
   (set s.delta-time 0)
   (set s.time-til-menu nil)
   (set s.freeze-player-until -100000)
+  ;; help states:
+  ;; 1) falsey - menu is closed
+  ;; 2) a scancode - used to indicate a keypressed event opened the menu and
+  ;;    the keyreleased event handler should not close the menu.
+  ;; 3) true - indicates the next event should close the menu
+  (set s.help nil)
   (let [(polygon actors) (mapgen.generate-level s.level)]
     (set s.level-border polygon)
     (each [_ args (ipairs actors)]
@@ -65,28 +71,39 @@
   (dungeon.draw-actors s)
 
   (love.graphics.setColor [1 1 1 1])
-  (love.graphics.print (lume.format "elapsed-time {elapsed-time}" s) 10 10))
+  (love.graphics.print (lume.format "elapsed-time {elapsed-time}" s) 10 10)
+  (love.graphics.setColor [.5 .5 .5 1])
+  (love.graphics.print "Press F1, /, or ? for help" 500 10)
+
+  (when s.help
+    (draw.help)))
 
 (fn dungeon.mousemoved [s x y]
   (set s.player.angle (geom.angle (vec2-op - [x y] s.player.pos))))
 
 (fn dungeon.keypressed [s keycode scancode]
-  (when (= scancode :space)
-    (dungeon.actor-try-stamina-action
-     s.player
-     s.player.melee-stamina-cost
-     (lambda []
-       (dungeon.freeze-player s 0.2)
-       (dungeon.spawn-actor
-        s
-        :sword
-        s.player.pos
-        s.player.angle
-        true
-        s.player.melee-atk
-        {:duration 0.2}))))
-  ;; DEBUG
-  (when (= scancode :f5)
+  (when (not s.help)
+    (match scancode
+      ;; Melee
+      :space
+      (dungeon.actor-try-stamina-action
+       s.player
+       s.player.melee-stamina-cost
+       (lambda []
+         (dungeon.freeze-player s 0.2)
+         (dungeon.spawn-actor
+          s
+          :sword
+          s.player.pos
+          s.player.angle
+          true
+          s.player.melee-atk
+          {:duration 0.2})))
+      (where (or :/ :? :f1))
+      (set s.help scancode)
+      ;; Reload the current level.
+      :f5
+      (do
         (tset package.loaded :mapgen nil)
         (let [(status err) (pcall
                             (lambda []
@@ -94,15 +111,24 @@
                               (dungeon.next-level s)))]
           (if (= status false)
               (print (.. "ERROR: failed to reload map. " err)))))
-  (when (= scancode :f6)
-    (pp s.level-border)))
+      ;; Log level border to console.
+      :f6
+      (pp s.level-border))))
+
+(fn dungeon.keyreleased [s keycode scancode]
+  (when s.help
+    (match scancode
+      (where (or :lshift :rshift :lctrl :rctrl :lalt :ralt)) nil
+      _ (set s.help (= s.help scancode)))))
 
 (fn dungeon.mousepressed [s x y button]
-  (dungeon.actor-try-stamina-action
-   s.player
-   s.player.bullet-stamina-cost
-   (lambda []
-     (dungeon.spawn-actor s :bullet s.player.pos s.player.angle true))))
+  (if s.help
+      (set s.help false)
+      (dungeon.actor-try-stamina-action
+       s.player
+       s.player.bullet-stamina-cost
+       (lambda []
+         (dungeon.spawn-actor s :bullet s.player.pos s.player.angle true)))))
 
 (fn dungeon.move-player-to [s newpos]
   (set s.delta-time (+ s.delta-time
@@ -361,29 +387,34 @@
                           (+ actor.angle (/ actor.rotate-speed 30)))))))
 
 (fn dungeon.update-player [s dt]
-  ;; keyboard input
-  (let [shifted? (or (love.keyboard.isDown :lshift) (love.keyboard.isDown :rshift))
-        key-offsets {:a [-1 0] :h [-1 0] :left [-1 0]
-                     :s [0 1] :j [0 1] :down [0 1]
-                     :w [0 -1] :k [0 -1] :up [0 -1]
-                     :d [1 0] :l [1 0] :right [1 0]}]
+  (when (not s.help)
+    ;; keyboard input
+    (local shifted?
+           (or (love.keyboard.isDown :lshift)
+               (love.keyboard.isDown :rshift)))
+    (local key-offsets
+           {:a [-1 0] :h [-1 0] :left [-1 0]
+            :s [0 1] :j [0 1] :down [0 1]
+            :w [0 -1] :k [0 -1] :up [0 -1]
+            :d [1 0] :l [1 0] :right [1 0]})
     ;; average all the angle inputs
-    (let [offset
-          (accumulate [pos [0 0]
-                       key kpos (pairs key-offsets)]
-            (if (love.keyboard.isScancodeDown key)
-                [(vec2-op + pos kpos)]
-                pos))
-          (angle distance) (geom.rectangular->polar (unpack offset))]
-      (when (> distance 0)
-           (let [speed (* s.player.speed dt (if shifted? 0.2 1))
-                 offset [(geom.polar->rectangular
-                          angle
-                          speed)]
-                 next-pos [(vec2-op + offset s.player.pos)]]
-             (set s.player.will-move-to next-pos)
-             (if (geom.point-in-polygon? next-pos s.level-border)
-                 (dungeon.move-player-to s next-pos)))))))
+    (local offset
+           (accumulate [pos [0 0]
+                        key kpos (pairs key-offsets)]
+             (if (love.keyboard.isScancodeDown key)
+                 [(vec2-op + pos kpos)]
+                 pos)))
+    (local (angle distance)
+           (geom.rectangular->polar (unpack offset)))
+    (when (> distance 0)
+      (let [speed (* s.player.speed dt (if shifted? 0.2 1))
+            offset [(geom.polar->rectangular
+                     angle
+                     speed)]
+            next-pos [(vec2-op + offset s.player.pos)]]
+        (set s.player.will-move-to next-pos)
+        (when (geom.point-in-polygon? next-pos s.level-border)
+          (dungeon.move-player-to s next-pos))))))
 
 (fn dungeon.damage-actor [s actor atk]
   (when actor.hp
