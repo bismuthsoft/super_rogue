@@ -413,9 +413,10 @@
        (love.graphics.setColor actor.color)
        (love.graphics.arc :fill
                           x y
-                          actor.hitbox.size
-                          (- actor.angle (/ actor.rotate-speed 30))
-                          (+ actor.angle (/ actor.rotate-speed 30)))))))
+                          (- actor.hitbox.size 3)
+                          (- actor.angle (/ actor.rotate-speed 60))
+                          (+ actor.angle (/ actor.rotate-speed 60))
+                          20)))))
 
 (fn dungeon.update-player [s dt]
   ;; keyboard input
