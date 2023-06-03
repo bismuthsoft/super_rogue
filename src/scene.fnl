@@ -15,6 +15,11 @@
     (where deinit) (deinit state ...))
   (set fns (require (.. "scenes." name)))
   (set state (fns.init ...))
+  (scene.bind fns state))
+
+(fn scene.bind [new-fns new-state]
+  (set fns new-fns)
+  (set state new-state)
 
   ;; bind love2d functions to scene
   (fn bind-love [name]
