@@ -398,7 +398,7 @@
       (do
         (love.graphics.setColor [1 1 1 0.2])
         (love.graphics.setLineWidth 2)
-        (love.graphics.circle :line x y actor.hitbox.size))
+        (love.graphics.circle :line x y (- actor.hitbox.size 1)))
       :line
       (do
         (draw.ray actor.pos [actor.angle actor.hitbox.size] 1 [1 1 1 0.2])))
