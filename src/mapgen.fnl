@@ -7,18 +7,34 @@
 (local mapgen {})
 
 (fn mapgen.generate-level [level w h]
-  (local enemy-list
-         [[:player]
-          [:killer-tomato]
-          [:grid-bug]
-          [:grid-bug]
-          [:grid-bug]])
-  (let [map (mapgen.join-polygons (unpack (mapgen.random-polygons w h)))
-        map-rect (mapgen.polygon-bounding-box map)]
-    (values
-     map
-     (icollect [_ [kind] (ipairs enemy-list)]
-       [kind [(mapgen.random-point-in-polygon map map-rect)]]))))
+  ;; place at least 4 rooms
+  (fn gen-rooms []
+    (let [rooms (mapgen.random-polygons w h)]
+      (if (> (length rooms) 3) rooms (gen-rooms))))
+  (local rooms (gen-rooms))
+  ;; join them into level border
+  (local level-border (mapgen.join-polygons (unpack rooms)))
+
+  (local actor-list [])
+  (fn add-actor [kind room ...]
+    (table.insert actor-list
+                  [kind
+                   [(mapgen.random-point-in-polygon room)]
+                   ...]))
+  ;; put player in room of own
+  (local player-room-index (love.math.random 1 (length rooms)))
+  (add-actor :player (. rooms player-room-index))
+
+  ;; place 10 enemies
+  (while (< (length actor-list) 10)
+    (each [index poly (ipairs rooms)]
+        (when (not= index player-room-index)
+          (when (< (love.math.random) 0.5)
+            (add-actor :grid-bug poly))
+          (when (< (love.math.random) 0.3)
+            (add-actor :killer-tomato poly)))))
+
+  (values level-border actor-list))
 
 (fn mapgen.random-polygons [w h]
   ;; w and h are maximum size
