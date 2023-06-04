@@ -146,7 +146,7 @@ jobs:
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - run: nix build .#super_rogue.dot_love
       - run: |
-          printf 'DOT_LOVE="%s"\n' \
+          printf 'DOT_LOVE=%s\n' \
               "$(nix eval --raw .#super_rogue.dot_love)/super_rogue.love" \
               >> "$GITHUB_OUTPUT"
         id: dot_love
@@ -154,6 +154,7 @@ jobs:
         with:
           name: dot_love-${{ github.sha }}
           path: ${{ steps.dot_love.outputs.DOT_LOVE }}
+          if-no-files-found: error
 
   windows:
     needs:
