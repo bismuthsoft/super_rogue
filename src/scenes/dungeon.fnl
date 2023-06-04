@@ -24,6 +24,10 @@
   (set s.stats {:vanquished {}
                 :gold 0})
   (set s.actors [])
+  (set s.log
+       (let [log (or s.log [])]
+         (table.insert log (lume.format "Welcome to dungeon level {level}" s))
+         log))
   (set s.actors-to-spawn [])
   (set s.hurt-tallies {}) ; list of hurt actors, keyed by actor (for animation)
   (set s.hurt-timers {})  ; list of timers to show that the current attack has ended
@@ -43,7 +47,10 @@
   (match s.time-til-game-over
     (where ttm (< ttm s.elapsed-time))
     (do
+      ;; Finalize stats data then show the game over screen.
       (set s.stats.elapsed-time s.elapsed-time)
+      (set s.stats.level s.level)
+      (set s.stats.log s.log)
       (scene.set :game-over s.stats))
     (where ttm)
     (set s.delta-time dt))
@@ -92,9 +99,13 @@
   (vision.draw-visible-border s.level-border s.border-seen)
   (dungeon.draw-actors s)
   (love.graphics.setColor [1 1 1 1])
-  (love.graphics.print (lume.format "elapsed-time {elapsed-time}" s) 10 10)
+  (love.graphics.print (lume.format "Level: {level} // Time: {time}"
+                                    {:time (lume.round s.elapsed-time .001) :level s.level})
+                       10 10)
   (love.graphics.setColor [.5 .5 .5 1])
-  (love.graphics.print "Press F1, /, or ? for help" 500 10))
+  (love.graphics.print "Press F1, /, or ? for help" 500 10)
+  (when (> (length s.log) 0)
+    (love.graphics.print (lume.last s.log) 265 560)))
 
 (fn dungeon.mousemoved [s x y]
   (set s.player.angle (geom.angle (vec2-op - [x y] s.player.pos))))
@@ -106,6 +117,8 @@
   (match scancode
     (where (or :/ :? :f1))
     (scene.set :dungeon-help s)
+    "\\"
+    (scene.set :dungeon-messages s)
     (where "." (util.shift-down?))
     (do
       (local distance (geom.distance (vec2-op -
@@ -348,6 +361,7 @@
                  :color [0 1 0]
                  :expiry (+ s.elapsed-time (+ 1 (math.random)))
                  :on-expiry (fn [s actor]
+                              (table.insert s.log "The tomato seed has grown into a killer tomato!")
                               (dungeon.spawn-actor s
                                                    :killer-tomato
                                                    actor.pos
@@ -380,7 +394,9 @@
      _
      (error (.. "Unknown Actor kind: " kind)))))
 
+;;; damage-actor returns nil.
 (fn dungeon.damage-actor [s actor atk]
+  (var msg nil)
   (when actor.hp
     (set actor.hp (- actor.hp atk))
     (tset s.hurt-tallies actor (+ (or (. s.hurt-tallies actor) 0) atk))
@@ -389,11 +405,18 @@
       (dungeon.spawn-particles s :circle actor.pos {:color actor.color :count 20})
       (match actor.kind
         :player
-        (set s.time-til-game-over (+ s.elapsed-time 2))
+        (do
+          (set s.time-til-game-over (+ s.elapsed-time 2))
+          (set msg "You died!"))
         monster
-        (tset s.stats.vanquished monster (+ 1 (or (. s.stats.vanquished monster)
-                                                  0))))
-      (dungeon.delete-actor s actor))))
+        (do
+          (tset s.stats.vanquished monster (+ 1 (or (. s.stats.vanquished monster)
+                                                    0)))
+          (set msg (.. "The " (monster:gsub "[-_]" " ") " is destroyed."))))
+      (dungeon.delete-actor s actor)))
+  (when msg
+    (table.insert s.log msg))
+  nil)
 
 (fn dungeon.insert-actor [s {: kind &as props}]
   (table.insert s.actors-to-spawn props)
@@ -413,7 +436,15 @@
         (when (and other.hitbox
                    (not= actor.friendly? other.friendly?)
                    (collide.actors-collide? actor other))
-          (dungeon.damage-actor s other (* actor.atk dt)))))
+          (local dmg (* actor.atk dt))
+          (table.insert
+           s.log
+           (match kind
+             :sword
+             (.. "You slash at the " (other.kind:gsub "[-_]" " ") ".")
+             (where _ (not= other.kind :sword))
+             (.. "The " (kind:gsub "[-_]" " ") " hurts you.")))
+          (dungeon.damage-actor s other dmg))))
 
     ;; automatic death
     (when (and actor.expiry
@@ -456,6 +487,7 @@
              (do
                (set actor.seed-timer nil)
                (set actor.seed-count (+ 1 actor.seed-count))
+               (table.insert s.log "The killer tomato has propagated a tomato seed...")
                (dungeon.spawn-actor s :tomato-seed actor.pos (+ 1 actor.generation))))))
       :particle
       (do
@@ -480,8 +512,9 @@
                        (not= actor.friendly? other.friendly?)
                        (geom.lineseg-in-circle? movement-lineseg
                                                 [other.pos other.hitbox.size]))
-                (dungeon.damage-actor s other actor.atk)
-                (dungeon.delete-actor s actor)))
+              (table.insert s.log (.. "You shot the " (other.kind:gsub "[-_]" " ")))
+              (dungeon.damage-actor s other actor.atk)
+              (dungeon.delete-actor s actor)))
           (set actor.pos next-pos))))))
 
 (fn dungeon.draw-actors [s]

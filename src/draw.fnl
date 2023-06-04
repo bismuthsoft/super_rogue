@@ -63,4 +63,21 @@
     (love.graphics.setColor [.7 .7 .7 1])
     (love.graphics.print description 250 y)))
 
+(fn draw.log [log screen-w screen-h]
+  (local last-messages (lume.last log 10))
+  (fn calc-y [index] (+ 50 (* index 25)))
+  (local w 450)
+  (local h (+ 50 (calc-y (length last-messages))))
+  (love.graphics.translate
+   (/ (- screen-w w) 2)
+   (/ (- screen-h h) 2))
+
+  (love.graphics.setColor .1 .1 .1 .9)
+  (love.graphics.rectangle :fill 0 0 w h)
+  (love.graphics.setColor [.8 .8 .8 1])
+  (love.graphics.print "Messages (press any key to close)" 25 25)
+  (each [i message (ipairs last-messages)]
+    (local y (calc-y i))
+    (love.graphics.print message 25 y)))
+
 draw

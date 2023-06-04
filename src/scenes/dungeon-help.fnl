@@ -27,7 +27,8 @@
   ["J, S, or Down" "Move down"]
   ["L, D, or Right" "Move right"]
   ["Tab or ." "Wait"]
-  [">" "Take Stairs"]])
+  [">" "Take Stairs"]
+  ["\\" "View game log "]])
 
 (fn help.draw [s]
   (dungeon.draw s.dungeon-state)
