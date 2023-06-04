@@ -600,7 +600,7 @@
                                       {:speed 100
                                        :color [0.8 0.8 0.5 1]
                                        :name "Leprechaun Dagger"
-                                       :expiry (+ s.elapsed-time 1)}))))
+                                       :expiry (+ s.elapsed-time 2)}))))
         (if
          (not actor.target-timer)
          (do
