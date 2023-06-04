@@ -171,7 +171,7 @@ jobs:
         uses: love-actions/love-actions-windows@v1
         with:
           love-package: ./super_rogue.love
-          icon-path: ./assets/super_rogue.ico
+          icon-path: ./src/assets/super_rogue.ico
           # rc-path: ./assets/template.rc
           product-name: super_rogue
           app-id: ${{ secrets.APP_ID }}
