@@ -435,9 +435,13 @@
                    (not= actor.friendly? other.friendly?)
                    (collide.actors-collide? actor other))
           (local dmg (* actor.atk dt))
-          (table.insert s.log (match kind
-                                :player (.. "You slash at the " (other.kind:gsub "[-_]" " ") ".")
-                                _ (.. "The " (kind:gsub "[-_]" " ") " hurts you.")))
+          (table.insert
+           s.log
+           (match kind
+             :sword
+             (.. "You slash at the " (other.kind:gsub "[-_]" " ") ".")
+             (where _ (not= other.kind :sword))
+             (.. "The " (kind:gsub "[-_]" " ") " hurts you.")))
           (dungeon.damage-actor s other dmg))))
 
     ;; automatic death
