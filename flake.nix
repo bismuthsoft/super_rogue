@@ -33,10 +33,11 @@
     dot_love = pkgs.stdenv.mkDerivation {
       pname = "super_rogue.love";
       version = "0.0.1";
-      src = ./.;
+      # Pull in the game src dir directly so valid builds don't invalidate on
+      # github actions edits.
+      src = ./src;
       buildInputs = [ pkgs.zip ];
       buildPhase = ''
-        cd src
         zip -r super_rogue.love .
       '';
       installPhase = ''
