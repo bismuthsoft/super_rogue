@@ -24,7 +24,7 @@
     (match ?color
       color (love.graphics.setColor color)
       _ (love.graphics.setColor [1 1 1 1]))
-    (local y (+ 100 (* line 25)))
+    (local y (* line 25))
     (match ?text-or-justified-pair
       ;; Left/right justified text pair.
       [left right]
@@ -44,10 +44,16 @@
   (print-line)
   (print-line (lume.format "You survived for {elapsed} seconds."
                            {:elapsed (lume.round s.elapsed-time .01)}))
+  (print-line (lume.format "You descended to dungeon level {level}" s))
   (print-line)
-  (print-line "-------- Enemies vanquished --------" [.7 .7 .7 1])
+  (local GRAY [.7 .7 .7 1])
+  (print-line "-------- Enemies vanquished --------" GRAY)
   (each [monster count (pairs s.vanquished)]
-    (print-line [(monster:gsub "[-_]" " ") (tostring count)])))
+    (print-line [(monster:gsub "[-_]" " ") (tostring count)] GRAY))
+  (print-line)
+  (print-line "------- Last 10 log messages -------" GRAY)
+  (each [_ message (ipairs (lume.last s.log 10))]
+    (print-line message GRAY)))
 
 (fn game-over.keypressed [s keycode scancode]
   (when (scene.global-keys.handle-keypressed keycode scancode)
