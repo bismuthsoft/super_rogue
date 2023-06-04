@@ -538,10 +538,15 @@
   nil)
 
 (fn dungeon.insert-actor [s {: kind &as props}]
-  (table.insert s.actors-to-spawn props)
   (if
-   (= kind :player) (set s.player props)
+   (= kind :player) (if s.player
+                        (do
+                          (set s.player.pos props.pos)
+                          (table.insert s.actors-to-spawn s.player)
+                          (lua "return"))
+                        (set s.player props))
    (= kind :stairs-down) (set s.stairs-down props))
+  (table.insert s.actors-to-spawn props)
   props)
 
 (fn dungeon.delete-actor [s actor]
