@@ -71,7 +71,7 @@ jobs:
           output-folder: ./dist
       - name: Build macOS packages
         id: build-mac-packages
-        uses: love-action/love-actions-macos-portable@v1
+        uses: love-actions/love-actions-macos-portable@v1
         with:
           app-name: "Super Rogue"
           bundle-id: "top.workinprogress.super_rogue"
