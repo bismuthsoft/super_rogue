@@ -119,7 +119,8 @@
       (let [(status err) (pcall
                           (lambda []
                             (set mapgen (require :mapgen))
-                            (dungeon.next-level s)))]
+                            (dungeon.next-level s)
+                            (for [i 1 1000] (tset s.border-seen i true))))]
         (if (= status false)
             (print (.. "ERROR: failed to reload map. " err)))))
     :f6
