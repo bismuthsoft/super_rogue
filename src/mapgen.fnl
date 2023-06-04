@@ -17,10 +17,8 @@
 
   (local actor-list [])
   (fn add-actor [kind room ...]
-    (table.insert actor-list
-                  [kind
-                   [(mapgen.random-point-in-polygon room)]
-                   ...]))
+    (let [pos [(mapgen.random-point-near-polygon-center room nil 0.8)]]
+      (table.insert actor-list [kind pos ...])))
   ;; put player in room of own
   (local player-room-index (love.math.random 1 (length rooms)))
   (add-actor :player (. rooms player-room-index))
@@ -72,12 +70,25 @@
      (+ x (* w (love.math.random)))
      (+ y (* h (love.math.random))))))
 
+(fn mapgen.bounding-box-center [[x1 y1 x2 y2]]
+  (values (/ (+ x1 x2) 2) (/ (+ y1 y2) 2)))
+
 (fn mapgen.random-point-in-polygon [polygon ?rect]
   (let [rect (or ?rect (mapgen.polygon-bounding-box polygon))
         point [(mapgen.random-point-in-rect (unpack rect))]]
     (if (geom.point-in-polygon? point polygon)
         (unpack point)
         (mapgen.random-point-in-polygon polygon rect))))
+
+(fn mapgen.random-point-near-polygon-center [polygon ?rect ?distance]
+  (let [rect (or ?rect (mapgen.polygon-bounding-box polygon))
+        distance (or ?distance 0.8)
+        point [(mapgen.random-point-in-rect (unpack rect))]
+        center [(mapgen.bounding-box-center rect)]
+        point [(vec2-op #(lume.lerp $1 $2 distance) center point)]]
+    (if (geom.point-in-polygon? point polygon)
+        (unpack point)
+        (mapgen.random-point-near-polygon-center polygon rect distance))))
 
 (fn mapgen.join-polygons [...]
   (var poly-out nil)
