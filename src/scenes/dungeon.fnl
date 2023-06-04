@@ -121,11 +121,8 @@
     (scene.set :dungeon-messages s)
     (where "." (util.shift-down?))
     (do
-      (local (nearest _ distance) (dungeon.nearest-actor s s.player))
-      (when (< distance 20)
-         (if (= nearest.kind :stairs-down)
-             (dungeon.next-level s)
-             (table.insert s.log (.. "Stairs blocked by " nearest.name)))))
+      (local distance (geom.distance (vec2-op - s.player.pos s.stairs-down.pos)))
+      (when (< distance 20) (dungeon.next-level s)))
     (where (or "." :tab))
     (set s.freeze-player-until (+ s.elapsed-time 0.5))
     :space
