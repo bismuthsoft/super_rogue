@@ -605,7 +605,7 @@
          (not actor.target-timer)
          (do
            (set actor.target-timer (+ s.elapsed-time
-                                      (/ (math.random 50 100) 64))))
+                                      (/ (math.random 40 80) 64))))
          (< actor.target-timer s.elapsed-time)
          (do
            (set actor.target-timer nil)
@@ -617,12 +617,13 @@
                  [(vec2-op +
                            s.player.pos
                            [(geom.polar->rectangular s.player.angle -300)])]]
-             (set actor.speed (if (or coin stairs) 40 65))
+             (set actor.speed (if (or coin stairs) 50 85))
              (dungeon.actor-look-at-pos actor (unpack
                                                (if
                                                 stairs stairs.pos
                                                 coin coin.pos
-                                                behind-player)))))
+                                                behind-player)))
+             (set actor.angle (+ actor.angle (* 0.4 (math.random))))))
          (do
            (when (not (dungeon.actor-step-forward actor dt s.level-border))
              (set actor.target-timer s.elapsed-time)))))
