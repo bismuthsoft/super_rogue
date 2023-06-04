@@ -69,6 +69,36 @@ jobs:
           build-deb: true
           product-name: super_rogue
           output-folder: ./dist
+      - name: Build macOS packages
+        id: build-packages
+        uses: love-action/love-actions-macos-portable@v1
+        with:
+          app-name: "Super Rogue"
+          bundle-id: "top.workinprogress.super_rogue"
+          copyright: "Copyright © 2023 44100hz & winny All Rights Reserved."
+          icon-path: ./assets/macOS/icon.icns
+          love-ref: "fc3f5ee6209a0aab9a4d381ed5cd99110f9ff2f2"
+          love-package: ${{ steps.dot_love.outputs.DOT_LOVE }}
+          # extra-assets: ./README.md ./license.txt
+          product-name: "super_rogue"
+          version-string: "1.0.0"
+          output-folder: "./dist"
+          account-username: ${{ secrets.APPLE_ACCOUNT_USERNAME }}
+          account-password: ${{ secrets.APPLE_ACCOUNT_PASSWORD }}
+          developer-id-application-base64: ${{ secrets.APPLE_CERT_DEVELOPER_ID_APPLICATION }}
+          developer-id-application-password: ${{ secrets.APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD }}
+          team-id: "${{ secrets.APPLE_DEVELOPER_TEAM_ID }}"
+          developer-id-installer-base64: ${{ secrets.APPLE_CERT_DEVELOPER_ID_INSTALLER }}
+          developer-id-installer-password: ${{ secrets.APPLE_CERT_DEVELOPER_ID_INSTALLER_PWD }}
+          dmg-background-path: ./assets/macOS/dmg.png
+          dmg-icon-position: "287 313"
+          dmg-icon-size: "128"
+          dmg-link-position: "734 313"
+          dmg-text-size: "12"
+          dmg-volume-icon-path: ./assets/macOS/dmg.icns
+          dmg-volume-name: "super_rogue"
+          dmg-window-position: "200 120"
+          dmg-window-size: "1024 604"
       - uses: actions/upload-artifact@v3
         with:
           name: dist
