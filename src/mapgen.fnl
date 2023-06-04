@@ -10,24 +10,31 @@
   (local
    DATA
    [
-    {:enemy-count 10
+    {:room-size 140
+     :enemy-count 10
      :enemy-prob {:grid-bug 0.5 :killer-tomato 0.3}
      :coin-counts {:gold-coin 1}}
-    {:enemy-count 5
+    {:room-size 130
+     :enemy-count 5
      :enemy-prob {:leprechaun 0.5 :grid-bug 0.3}
      :coin-counts {:gold-coin 5}}
-    {:enemy-count 10
+    {:room-size 120
+     :enemy-count 10
      :enemy-prob {:leprechaun 0.3 :killer-tomato 0.3 :grid-bug 0.3}
+     :coin-counts {:gold-coin 3}}
+    {:room-size 100
+     :enemy-count 10
+     :enemy-prob {:leprechaun 0.3 :killer-tomato 0.2 :grid-bug 0.3}
      :coin-counts {:gold-coin 3}}])
   (or (. DATA index) (lume.last DATA)))
 
 (fn mapgen.generate-level [level w h]
-  (local {: enemy-prob : enemy-count : coin-counts}
+  (local {: enemy-prob : enemy-count : coin-counts : room-size}
          (mapgen.get-leveldata level))
 
   ;; place at least 4 rooms
   (fn gen-rooms []
-    (let [rooms (mapgen.random-polygons w h 10)]
+    (let [rooms (mapgen.random-polygons w h 10 room-size)]
       (if (> (length rooms) 3) rooms (gen-rooms))))
   (local rooms (gen-rooms))
   (local bboxes (icollect [_ room (ipairs rooms)]
@@ -85,12 +92,12 @@
 
   (values level-border actor-list))
 
-(fn mapgen.random-polygons [w h max]
+(fn mapgen.random-polygons [w h max-count max-size]
   ;; w and h are maximum size
   (var polygons [])
-  (for [i 1 100 &until (< max (length polygons))]
+  (for [i 1 100 &until (< max-count (length polygons))]
     (let [margin 150
-          size (love.math.random 30 120)
+          size (love.math.random (/ max-size 3) max-size)
           next-poly (geom.polygon
                      {
                       :origin [(love.math.random margin (- w margin))
