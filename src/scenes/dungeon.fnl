@@ -255,6 +255,10 @@
           [(vec2-op - a step-vec)]))))
 
 (fn dungeon.spawn-particles [s kind ...]
+  (fn format-num [num]
+    (if (< num 0.95) (.. "." (lume.round (* num 10)))
+        (lume.round num)))
+
   (case kind
     :circle
     (let [(pos props) ...
@@ -268,18 +272,25 @@
                               : lifetime
                               :show-line {: color :len (/ speed 30)}
                               :speed (* speed (+ 1 (math.random)))})))
+    :healing-number
+    (let [(pos friendly? amt) ...]
+      (dungeon.spawn-actor s :particle pos (/ math.pi -2)
+                           {
+                            :color (if friendly? [0.5 1 0.5 1] [0 1 0 1])
+                            :lifetime 1
+                            :speed 30
+                            :char (format-num amt)
+                            :char-scale 0.5}))
     :damage-number
     (let [(pos friendly? atk) ...
           random-offset (lambda [] (- (* (math.random) 20) 10))
-          pos [(vec2-op + pos [(random-offset) (random-offset)])]
-          num (if (< atk 0.95)
-                  (.. "." (lume.round (* atk 10)))
-                  (lume.round atk))]
+          pos [(vec2-op + pos [(random-offset) (random-offset)])]]
       (dungeon.spawn-actor s :particle pos (/ math.pi -2)
-                           {:color (if friendly? [1 0.5 0.5 1] [1 0 0 1])
+                           {
+                            :color (if friendly? [1 0.5 0.5 1] [1 0 0 1])
                             :lifetime 1
                             :speed 30
-                            :char num
+                            :char (format-num atk)
                             :char-scale 0.5}))))
 
 (fn dungeon.spawn-actor [s kind ...]
@@ -492,6 +503,15 @@
        [_ :player]
        (.. "The " actor.name " hurts you.")))
     (dungeon.damage-actor s other dmg)))
+
+(fn dungeon.heal-actor [s actor amt]
+  (set actor.hp (math.min actor.max-hp (+ actor.hp amt)))
+  (dungeon.spawn-particles
+   s
+   :healing-number
+   actor.pos
+   actor.friendly?
+   amt))
 
 ;;; damage-actor returns nil.
 (fn dungeon.damage-actor [s actor atk]
