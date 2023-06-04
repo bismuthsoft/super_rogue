@@ -62,6 +62,7 @@ jobs:
           bundle-id: top.workinprogress.super-rogue
           description: Super Rogue
           version-string: "1.0.0"
+          icon-path: ./src/assets/super_rogue.png
           # icon-path: ./.github/build/linux/dev/icon.png
           love-package: ${{ steps.dot_love.outputs.DOT_LOVE }}
           # lib-path: ./lib
@@ -90,12 +91,12 @@ jobs:
           team-id: "${{ secrets.APPLE_DEVELOPER_TEAM_ID }}"
           developer-id-installer-base64: ${{ secrets.APPLE_CERT_DEVELOPER_ID_INSTALLER }}
           developer-id-installer-password: ${{ secrets.APPLE_CERT_DEVELOPER_ID_INSTALLER_PWD }}
-          dmg-background-path: ./assets/macOS/dmg.png
+          dmg-background-path: ./src/assets/super_rogue.png
           dmg-icon-position: "287 313"
           dmg-icon-size: "128"
           dmg-link-position: "734 313"
           dmg-text-size: "12"
-          dmg-volume-icon-path: ./assets/macOS/dmg.icns
+          # dmg-volume-icon-path: ./assets/macOS/dmg.icns
           dmg-volume-name: "super_rogue"
           dmg-window-position: "200 120"
           dmg-window-size: "1024 604"
