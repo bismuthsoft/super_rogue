@@ -60,4 +60,16 @@
     (love.graphics.applyTransform transform)
     (fns.draw state)))
 
+(set scene.global-keys {})
+
+;; Returns true if event should not propagate into current scene's handler
+(fn scene.global-keys.handle-keypressed [keycode scancode]
+  (match scancode                       ; Match returns nil if no match.
+    (where :return (or (love.keyboard.isDown :lalt) (love.keyboard.isDown :ralt)))
+    (do
+      (love.window.setFullscreen (not (love.window.getFullscreen)))
+      true)
+    (where (or :lalt :ralt))
+    true))
+
 scene

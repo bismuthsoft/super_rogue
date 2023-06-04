@@ -90,6 +90,9 @@
   (set s.player.angle (geom.angle (vec2-op - [x y] s.player.pos))))
 
 (fn dungeon.keypressed [s keycode scancode]
+  (when (scene.global-keys.handle-keypressed keycode scancode)
+    (lua "return"))
+
   (match scancode
     (where (or :/ :? :f1))
     (scene.set :dungeon-help s)

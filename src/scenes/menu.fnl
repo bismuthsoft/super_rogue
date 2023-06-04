@@ -23,7 +23,8 @@
   (love.graphics.print "Press any key to play" 300 300))
 
 (fn menu.keypressed [s keycode scancode]
-  (print (lume.format "Pressed {keycode}" {: keycode}))
+  (when (scene.global-keys.handle-keypressed keycode scancode)
+    (lua "return"))
   (scene.set :dungeon))
 
 menu
