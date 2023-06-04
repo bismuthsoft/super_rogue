@@ -13,11 +13,11 @@
     {:enemy-count 10
      :enemy-prob {:grid-bug 0.5 :killer-tomato 0.3}
      :coin-counts {:gold-coin 1}}
-    {:enemy-count 20
-     :enemy-prob {:killer-tomato 0.5 :grid-bug 0.3}
+    {:enemy-count 5
+     :enemy-prob {:leprechaun 0.5 :grid-bug 0.3}
      :coin-counts {:gold-coin 5}}
-    {:enemy-count 30
-     :enemy-prob {:killer-tomato 0.3 :grid-bug 0.3}
+    {:enemy-count 10
+     :enemy-prob {:leprechaun 0.3 :killer-tomato 0.3 :grid-bug 0.3}
      :coin-counts {:gold-coin 3}}])
   (or (. DATA index) (lume.last DATA)))
 
