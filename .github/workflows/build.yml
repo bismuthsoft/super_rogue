@@ -53,7 +53,7 @@ jobs:
         id: dot_love
       - name: Build Linux packages
         id: build-packages
-        uses: love-action/love-actions-linux@v1
+        uses: love-actions/love-actions-linux@v1
         with:
           app-name: Super Rogue
           bundle-id: top.workinprogress.super-rogue
