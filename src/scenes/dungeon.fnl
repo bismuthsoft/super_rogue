@@ -21,6 +21,8 @@
 
 (fn dungeon.next-level [s]
   (set s.level (+ s.level 1))
+  (set s.stats {:vanquished {}
+                :gold 0})
   (set s.actors [])
   (set s.actors-to-spawn [])
   (set s.hurt-tallies {}) ; list of hurt actors, keyed by actor (for animation)
@@ -30,7 +32,7 @@
   (set s.delta-time 0)    ; ingame timer step
   (set s.actors-seen {}) ; list of places actors have been seen last
   (set s.border-seen [])  ; list of what level faces have been seen
-  (set s.time-til-menu nil)
+  (set s.time-til-game-over nil)
   (set s.freeze-player-until -100000)
   (let [(polygon actors) (mapgen.generate-level s.level (dungeon.size s))]
     (set s.level-border polygon)
@@ -38,9 +40,13 @@
       (dungeon.spawn-actor s (unpack args)))))
 
 (fn dungeon.update [s dt]
-  (match s.time-til-menu
-    (where ttm (< ttm s.elapsed-time)) (scene.set :menu)
-    (where ttm) (set s.delta-time dt))
+  (match s.time-til-game-over
+    (where ttm (< ttm s.elapsed-time))
+    (do
+      (set s.stats.elapsed-time s.elapsed-time)
+      (scene.set :game-over s.stats))
+    (where ttm)
+    (set s.delta-time dt))
 
   ;; add actors
   (each [_ actor (ipairs s.actors-to-spawn)]
@@ -62,7 +68,7 @@
         (tset s.hurt-tallies actor nil))))
 
   (if
-   (or (> s.freeze-player-until s.elapsed-time) s.time-til-menu)
+   (or (> s.freeze-player-until s.elapsed-time) s.time-til-game-over)
    (do                                  ; realtime mode
       (set s.elapsed-time (+ dt s.elapsed-time))
       (dungeon.update-actors s dt))
@@ -94,6 +100,9 @@
   (set s.player.angle (geom.angle (vec2-op - [x y] s.player.pos))))
 
 (fn dungeon.keypressed [s keycode scancode]
+  (when (scene.global-keys.handle-keypressed keycode scancode)
+    (lua "return"))
+
   (match scancode
     (where (or :/ :? :f1))
     (scene.set :dungeon-help s)
@@ -366,7 +375,11 @@
     (when (< actor.hp 0)
       (dungeon.spawn-particles s :circle actor.pos {:color actor.color :count 20})
       (match actor.kind
-        :player (set s.time-til-menu (+ s.elapsed-time 2)))
+        :player
+        (set s.time-til-game-over (+ s.elapsed-time 2))
+        monster
+        (tset s.stats.vanquished monster (+ 1 (or (. s.stats.vanquished monster)
+                                                  0))))
       (dungeon.delete-actor s actor))))
 
 (fn dungeon.insert-actor [s {: kind &as props}]

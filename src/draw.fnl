@@ -54,7 +54,7 @@
 
   (love.graphics.setColor .1 .1 .1 .9)
   (love.graphics.rectangle :fill 0 0 w h)
-  (love.graphics.setColor [1 1 1 0.5])
+  (love.graphics.setColor [.8 .8 .8 1])
   (love.graphics.print "Help (press any key to close)" 25 25)
   (each [i [input description] (ipairs entries)]
     (local y (calc-y i))
