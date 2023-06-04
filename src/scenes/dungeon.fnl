@@ -158,6 +158,8 @@
   (set s.delta-time (+ s.delta-time
                        (/ (geom.distance (vec2-op - newpos s.player.pos))
                           s.player.speed)))
+  (set s.player.stamina (- s.player.stamina (* s.player.movement-cost
+                                               s.delta-time)))
   (dungeon.actor-look-at-pos s.player (scene.get-mouse-position))
   (vision.update-visible s.border-seen s.player.pos s.level-border)
   (set s.player.pos newpos))
@@ -306,6 +308,7 @@
         :bullet-atk 100
         :melee-stamina-cost 3
         :melee-atk 10
+        :movement-cost 2
         :hitbox {:size 8 :shape :circle}
         :show-line {:color [1 1 1 0.3]
                     :len 100}
