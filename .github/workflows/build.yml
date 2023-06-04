@@ -70,6 +70,30 @@ jobs:
           build-deb: true
           product-name: super-rogue
           output-folder: ./dist
+      - uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist/linux
+  mac:
+    needs:
+      - test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v20
+        with:
+          nix_path: channel:nixos-22.11
+      # cachix-action allows for caching of the built website.
+      - uses: cachix/cachix-action@v12
+        with:
+          name: bismuthsoft
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+      - run: nix build .#super_rogue.dot_love
+      - run: |
+          printf 'DOT_LOVE="%s"\n' \
+              "$(nix eval --raw .#super_rogue.dot_love)/super_rogue.love" \
+              >> "$GITHUB_OUTPUT"
+        id: dot_love
       - name: Build macOS packages
         id: build-mac-packages
         uses: winny-/love-actions-macos-portable@productivityTweaks
@@ -103,7 +127,9 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: dist
-          path: dist/
+          path: dist/linux
+
+
   website:
     permissions:
       pull-requests: write
