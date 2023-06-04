@@ -6,7 +6,25 @@
 
 (local mapgen {})
 
+(fn mapgen.get-leveldata [index]
+  (local
+   DATA
+   [
+    {:enemy-count 10
+     :enemy-prob {:grid-bug 0.5 :killer-tomato 0.3}
+     :coin-counts {:gold-coin 1}}
+    {:enemy-count 20
+     :enemy-prob {:killer-tomato 0.5 :grid-bug 0.3}
+     :coin-counts {:gold-coin 5}}
+    {:enemy-count 30
+     :enemy-prob {:killer-tomato 0.3 :grid-bug 0.3}
+     :coin-counts {:gold-coin 3}}])
+  (or (. DATA index) (lume.last DATA)))
+
 (fn mapgen.generate-level [level w h]
+  (local {: enemy-prob : enemy-count : coin-counts}
+         (mapgen.get-leveldata level))
+
   ;; place at least 4 rooms
   (fn gen-rooms []
     (let [rooms (mapgen.random-polygons w h 10)]
@@ -40,13 +58,13 @@
    [:player [(mapgen.bounding-box-center (. bboxes player-room-index))]])
 
   ;; place 10 enemies
-  (while (< (length actor-list) 10)
+  (while (< (length actor-list) enemy-count)
     (each [index poly (ipairs rooms)]
         (when (not= index player-room-index)
-          (when (< (love.math.random) 0.5)
-            (add-actor :grid-bug poly 1))
-          (when (< (love.math.random) 0.3)
-            (add-actor :killer-tomato poly 0.5)))))
+          (each [name prob (pairs enemy-prob)]
+            (when (< (love.math.random) prob)
+              (local center-distance (if (= name :killer-tomato) 0.5 1))
+              (add-actor name poly center-distance))))))
 
   ;; place stairs down in furthest room from player
   ;; NOTE: it is intentional that enemies can generate on top of stairs.
@@ -57,10 +75,13 @@
    actor-list
    [:stairs-down [(mapgen.bounding-box-center (. bboxes furthest-room-index))]])
 
+  (each [name count (pairs coin-counts)]
+    (for [i 1 count]
+      (table.insert actor-list
+                    [name
+                     [(mapgen.random-point-in-polygon level-border)]])))
+
   ;; place 3 gold coins
-  (for [i 1 3] (table.insert actor-list
-                             [:gold-coin
-                              [(mapgen.random-point-in-polygon level-border)]]))
 
   (values level-border actor-list))
 
