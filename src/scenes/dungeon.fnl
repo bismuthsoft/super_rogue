@@ -367,8 +367,8 @@
         :enemy? true
         :color [.2 1 .2 1]
         :char "l"
-        :hp 2
-        :max-hp 2
+        :hp 4
+        :max-hp 4
         :atk 5
         :hitbox {:size 8 :shape :circle}
         :speed 30
