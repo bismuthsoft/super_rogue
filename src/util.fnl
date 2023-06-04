@@ -22,16 +22,24 @@
 
 ;; Using a function that takes a list entry and a function, return the index and
 ;; value with the highest score.
-(fn util.max-by-score [list f]
+(fn util.max-by-score [list f ?self]
   (unpack
-   (accumulate [top [nil -1 (- math.huge)]
+   (accumulate [top []
                 i v (ipairs list)]
-     (let [score (f v i)]
-       (if (> score (. top 3))
+     (let [score (f v i)
+           skip (and ?self (= ?self v))]
+       (if (or (not (. top 1))
+               (and (not skip) (> score (. top 3))))
            [v i score]
            top)))))
 
-(fn util.index-of-furthest [pos positions]
+(fn util.furthest [pos positions]
+  (util.max-by-score
+   positions
+   (lambda [v]
+     (geom.distance (vec2-op - pos v)))))
+
+(fn util.nearest [pos positions]
   (util.max-by-score
    positions
    (lambda [v]

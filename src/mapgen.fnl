@@ -23,13 +23,21 @@
   ;; place actors...
   (local actor-list [])
   (fn add-actor [kind room distance]
-    (let [pos [(mapgen.random-point-near-polygon-center room nil distance)]]
-      (table.insert actor-list [kind pos])))
+    (let [pos [(mapgen.random-point-near-polygon-center
+                room
+                nil
+                distance)]
+          (_ _ nearest) (util.max-by-score
+                         actor-list
+                         #(- (geom.distance (vec2-op - pos (. $1 2)))))]
+      (if (< nearest -20)
+        (table.insert actor-list [kind pos]))))
 
   ;; put player in room of own
   (local player-room-index (love.math.random 1 (length rooms)))
-  (local player-room (. rooms player-room-index))
-  (add-actor :player player-room 0)
+  (table.insert
+   actor-list
+   [:player [(mapgen.bounding-box-center (. bboxes player-room-index))]])
 
   ;; place 10 enemies
   (while (< (length actor-list) 10)
@@ -41,10 +49,13 @@
             (add-actor :killer-tomato poly 0.5)))))
 
   ;; place stairs down in furthest room from player
-  (local (_ furthest-room-idx) (util.index-of-furthest
+  ;; NOTE: it is intentional that enemies can generate on top of stairs.
+  ;; He's blocking the stairway!
+  (local (_ furthest-room-idx) (util.furthest
                                 (. centers player-room-index)
                                 centers))
   (add-actor :stairs-down (. rooms furthest-room-idx) 0)
+
 
   (values level-border actor-list))
 
