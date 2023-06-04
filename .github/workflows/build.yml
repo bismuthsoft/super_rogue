@@ -68,7 +68,7 @@ jobs:
           # lib-path: ./lib
           # share-path: ./share
           build-deb: true
-          product-name: super_rogue
+          product-name: super-rogue
           output-folder: ./dist
       - name: Build macOS packages
         id: build-mac-packages
