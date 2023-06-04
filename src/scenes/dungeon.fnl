@@ -4,7 +4,7 @@
 (local util (require :util))
 (local draw (require :draw))
 (local collide (require :collide))
-(local vision (require :vision))
+(var vision (require :vision))
 (var mapgen (require :mapgen))
 (local lume (require :lib.lume))
 (local pp util.pp)
@@ -23,12 +23,13 @@
   (set s.level (+ s.level 1))
   (set s.actors [])
   (set s.actors-to-spawn [])
-  (set s.hurt-tallies {}) ;; list of hurt actors, keyed by actor (for animation)
-  (set s.hurt-timers {})  ;; list of timers to show that the current attack has ended
-  (set s.last-seen-at {}) ;; list of places actors have been seen last
+  (set s.hurt-tallies {}) ; list of hurt actors, keyed by actor (for animation)
+  (set s.hurt-timers {})  ; list of timers to show that the current attack has ended
   (set s.will-delete {})
-  (set s.elapsed-time 0)
-  (set s.delta-time 0)
+  (set s.elapsed-time 0)  ; ingame timer for freezable entities
+  (set s.delta-time 0)    ; ingame timer step
+  (set s.actors-seen {}) ; list of places actors have been seen last
+  (set s.border-seen [])  ; list of what level faces have been seen
   (set s.time-til-menu nil)
   (set s.freeze-player-until -100000)
   (let [(polygon actors) (mapgen.generate-level s.level (dungeon.size s))]
@@ -80,9 +81,10 @@
   (set s.will-delete {}))
 
 (fn dungeon.draw [s]
-  (draw.polygon s.level-border 2 [1 1 1 0.7])
+  (love.graphics.setColor 1 1 1 0.7)
+  (love.graphics.setLineWidth 2)
+  (vision.draw-visible-border s.level-border s.border-seen)
   (dungeon.draw-actors s)
-
   (love.graphics.setColor [1 1 1 1])
   (love.graphics.print (lume.format "elapsed-time {elapsed-time}" s) 10 10)
   (love.graphics.setColor [.5 .5 .5 1])
@@ -112,7 +114,16 @@
         (if (= status false)
             (print (.. "ERROR: failed to reload map. " err)))))
     :f6
-    (pp s.level-border)))
+    (pp s.level-border)
+    :f7
+    (do
+      (tset package.loaded :vision nil)
+      (let [(status err) (pcall
+                          (lambda []
+                            (set vision (require :vision))
+                            (vision.get-visible-faces s.player.pos s.level-border)))]
+        (if (= status false)
+            (print (.. "ERROR: failed to reload vision. " err)))))))
 
 (fn dungeon.mousepressed [s x y button]
   (match button
@@ -126,6 +137,7 @@
                        (/ (geom.distance (vec2-op - newpos s.player.pos))
                           s.player.speed)))
   (dungeon.actor-look-at-pos s.player (scene.get-mouse-position))
+  (vision.update-visible s.border-seen s.player.pos s.level-border)
   (set s.player.pos newpos))
 
 (fn dungeon.freeze-player [s duration]
@@ -454,15 +466,15 @@
       actor.always-visible?)
      (do
        (dungeon.draw-actor s actor)
-       (tset s.last-seen-at actor actor.pos))
-     (. s.last-seen-at actor)
+       (tset s.actors-seen actor actor.pos))
+     (. s.actors-seen actor)
      (do
        (love.graphics.setColorMask false false true true)
-       (dungeon.draw-actor s actor (. s.last-seen-at actor))
+       (dungeon.draw-actor s actor (. s.actors-seen actor))
        (love.graphics.setColorMask true true true true)))))
 
-(fn dungeon.draw-actor [s {: kind &as actor} ?last-seen-at]
-  (local [x y] (or ?last-seen-at actor.pos))
+(fn dungeon.draw-actor [s {: kind &as actor} ?actors-seen]
+  (local [x y] (or ?actors-seen actor.pos))
   (case (?. actor :hitbox :shape)
     :circle
     (do
