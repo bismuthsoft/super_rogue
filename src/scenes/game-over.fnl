@@ -45,11 +45,12 @@
   (print-line (lume.format "You survived for {elapsed} seconds."
                            {:elapsed (lume.round s.elapsed-time .01)}))
   (print-line (lume.format "You descended to dungeon level {level}" s))
+  (print-line (lume.format "You collected ${money} worth of stuff" s))
   (print-line)
   (local GRAY [.7 .7 .7 1])
   (print-line "-------- Enemies vanquished --------" GRAY)
   (each [monster count (pairs s.vanquished)]
-    (print-line [(monster:gsub "[-_]" " ") (tostring count)] GRAY))
+    (print-line [monster (tostring count)] GRAY))
   (print-line)
   (print-line "------- Last 10 log messages -------" GRAY)
   (each [_ message (ipairs (lume.last s.log 10))]

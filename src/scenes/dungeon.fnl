@@ -12,7 +12,12 @@
 (local dungeon {})
 
 (fn dungeon.init []
-  (let [state {:level 0}]
+  (let [state {:level 0
+               :elapsed-time 0
+               :delta-time 0
+               :stats {:vanquished {}
+                       :money 0}
+               :log []}]
     (dungeon.next-level state)
     state))
 
@@ -21,20 +26,14 @@
 
 (fn dungeon.next-level [s]
   (set s.level (+ s.level 1))
-  (set s.stats {:vanquished {}
-                :gold 0})
   (set s.actors [])
-  (set s.log
-       (let [log (or s.log [])]
-         (table.insert log (lume.format "Welcome to dungeon level {level}" s))
-         log))
+  (table.insert s.log
+                (lume.format "Welcome to dungeon level {level}" s))
   (set s.actors-to-spawn [])
-  (set s.hurt-tallies {}) ; list of hurt actors, keyed by actor (for animation)
-  (set s.hurt-timers {})  ; list of timers to show that the current attack has ended
-  (set s.will-delete {})
-  (set s.elapsed-time 0)  ; ingame timer for freezable entities
-  (set s.delta-time 0)    ; ingame timer step
-  (set s.actors-seen {}) ; list of places actors have been seen last
+  (set s.hurt-tallies {}) ; map of <actor,tally> to combine hp of hits
+  (set s.hurt-timers {})  ; map of <actor,timestamp> to combine hp of hits
+  (set s.will-delete {})  ; map of <actor,will-delete?> to delete actors
+  (set s.actors-seen {})  ; map of <actor,place> where have been seen last
   (set s.time-til-game-over nil)
   (set s.freeze-player-until -100000)
   (let [(polygon actors) (mapgen.generate-level s.level (dungeon.size s))]
@@ -121,11 +120,8 @@
     (scene.set :dungeon-messages s)
     (where "." (util.shift-down?))
     (do
-      (local (nearest _ distance) (dungeon.nearest-actor s s.player))
-      (when (< distance 20)
-         (if (= nearest.kind :stairs-down)
-             (dungeon.next-level s)
-             (print "Stairs Blocked by" nearest.kind)))) ;; TODO: log warning -- stairs blocked
+      (local distance (geom.distance (vec2-op - s.player.pos s.stairs-down.pos)))
+      (when (< distance 20) (dungeon.next-level s)))
     (where (or "." :tab))
     (set s.freeze-player-until (+ s.elapsed-time 0.5))
     :space
@@ -270,12 +266,14 @@
      :player
      (let [pos ...]
        {: kind
+        :name "player"
         : pos
         :friendly? true
         :always-visible? true
         :vision? true
         :color [1 1 1]
         :char "@"
+        :char-scale 1.3
         :angle 0
         :speed 120
         :hp 3
@@ -307,6 +305,7 @@
      :bullet
      (let [(pos angle friendly? atk) ...]
         {: kind
+         :name "bullet"
          : friendly?
          : pos
          : angle
@@ -323,6 +322,7 @@
            rotate-speed (/ arc-len duration)
            expiry (+ s.elapsed-time duration)]
        {: kind
+        :name "sword"
         : pos
         : angle
         : friendly?
@@ -333,21 +333,10 @@
         :always-visible? true
         : rotate-speed
         : expiry})
-     :particle
-     (let [(pos angle props) ...]
-       {: kind
-        : angle
-        : pos
-        :always-visible? true
-        :color props.color
-        :char props.char
-        :char-scale props.char-scale
-        :show-line props.show-line
-        :expiry (+ s.elapsed-time props.lifetime)
-        :speed props.speed})
      :killer-tomato
      (let [(pos ?generation) ...]
        {: kind
+        :name "killer tomato"
         : pos
         :enemy? true
         :color [1 0 0]
@@ -362,7 +351,8 @@
 
      :tomato-seed
      (let [(pos generation) ...
-           seed {
+           seed {: kind
+                 :name "tomato seed"
                  : pos
                  :char "•"
                  :color [0 1 0]
@@ -380,10 +370,12 @@
      :grid-bug
      (let [pos ...]
        {: kind
+        :name "Gridbug"
         : pos
         :enemy? true
         :color [(lume.color "#811A74")]
         :char "x"
+        :char-scale 0.8
         :hp 1
         :max-hp 1
         :atk 2
@@ -391,16 +383,62 @@
         :angle 0
         :ai {:kind :random}
         :hitbox {:size 4 :shape :circle}})
+     :gold-coin
+     (let [pos ...]
+       {: kind
+        :name "gold coin"
+        : pos
+        :color [1 0.8 0 1]
+        :char "o"
+        :char-scale 1
+        :hitbox {:size 5 :shape :circle}
+        :collect {:money 1}})
      :stairs-down
      (let [pos ...]
        {: kind
+        :name "downward staircase"
         : pos
         :color [1 0.7 0 1]
         :char ">"
         :hitbox {:size 8 :shape :circle}})
+     :particle
+     (let [(pos angle props) ...]
+       {: kind
+        :name "particle"
+        : angle
+        : pos
+        :always-visible? true
+        :color props.color
+        :char props.char
+        :char-scale props.char-scale
+        :show-line props.show-line
+        :expiry (+ s.elapsed-time props.lifetime)
+        :speed props.speed})
      _
      (error (.. "Unknown Actor kind: " kind)))))
 
+(fn dungeon.collide-actors [s actor other dt]
+  (match [actor.collect other]
+    (where [{:money value} s.player])
+    (do
+      (set s.stats.money (+ s.stats.money value))
+      (table.insert
+       s.log
+       (.. "You collected a " actor.name " worth $" value))
+      (dungeon.delete-actor s actor)
+      (lua "return")))
+  (when (and
+         actor.atk
+         (= actor.friendly? other.enemy?))
+    (local dmg (* actor.atk dt))
+    (table.insert
+     s.log
+     (match actor.kind
+       :sword
+       (.. "You slash at the " other.name ".")
+       (where _ (not= other.kind :sword))
+       (.. "The " actor.name " hurts you.")))
+    (dungeon.damage-actor s other dmg)))
 ;;; damage-actor returns nil.
 (fn dungeon.damage-actor [s actor atk]
   (var msg nil)
@@ -414,12 +452,12 @@
         :player
         (do
           (set s.time-til-game-over (+ s.elapsed-time 2))
-          (set msg "You died!"))
+          (set s.msg "You died!"))
         monster
         (do
-          (tset s.stats.vanquished monster (+ 1 (or (. s.stats.vanquished monster)
-                                                    0)))
-          (set msg (.. "The " (monster:gsub "[-_]" " ") " is destroyed."))))
+          (tset s.stats.vanquished actor.name (+ 1 (or (. s.stats.vanquished actor.name)
+                                                       0)))
+          (set msg (.. "The " actor.name " is destroyed."))))
       (dungeon.delete-actor s actor)))
   (when msg
     (table.insert s.log msg))
@@ -438,20 +476,13 @@
 (fn dungeon.update-actors [s dt]
   (each [i {: kind &as actor} (ipairs s.actors)]
     ;; hitboxes
-    (when (and actor.hitbox actor.atk)
+    (when actor.hitbox
       (each [_ other (ipairs s.actors)]
-        (when (and other.hitbox
-                   (not= actor.friendly? other.friendly?)
-                   (collide.actors-collide? actor other))
-          (local dmg (* actor.atk dt))
-          (table.insert
-           s.log
-           (match kind
-             :sword
-             (.. "You slash at the " (other.kind:gsub "[-_]" " ") ".")
-             (where _ (not= other.kind :sword))
-             (.. "The " (kind:gsub "[-_]" " ") " hurts you.")))
-          (dungeon.damage-actor s other dmg))))
+        (when (and
+               (not= actor other)
+               other.hitbox
+               (collide.actors-collide? actor other))
+          (dungeon.collide-actors s actor other dt))))
 
     ;; automatic death
     (when (and actor.expiry
@@ -519,7 +550,7 @@
                        (not= actor.friendly? other.friendly?)
                        (geom.lineseg-in-circle? movement-lineseg
                                                 [other.pos other.hitbox.size]))
-              (table.insert s.log (.. "You shot the " (other.kind:gsub "[-_]" " ")))
+              (table.insert s.log (.. "You shot the " other.name))
               (dungeon.damage-actor s other actor.atk)
               (dungeon.delete-actor s actor)))
           (set actor.pos next-pos))))))

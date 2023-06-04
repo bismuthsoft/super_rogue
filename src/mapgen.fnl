@@ -50,7 +50,6 @@
 
   ;; place stairs down in furthest room from player
   ;; NOTE: it is intentional that enemies can generate on top of stairs.
-  ;; He's blocking the stairway!
   (local (_ furthest-room-index) (util.furthest
                                   (. centers player-room-index)
                                   centers))
@@ -58,10 +57,10 @@
    actor-list
    [:stairs-down [(mapgen.bounding-box-center (. bboxes furthest-room-index))]])
 
-  ;; allows stairs to be blocked on purpose
-  ;; (table.insert
-  ;;  actor-list
-  ;;  [:killer-tomato [(vec2-op + [10 0] [(mapgen.bounding-box-center (. bboxes furthest-room-index))])]])
+  ;; place 3 gold coins
+  (for [i 1 3] (table.insert actor-list
+                             [:gold-coin
+                              [(mapgen.random-point-in-polygon level-border)]]))
 
   (values level-border actor-list))
 
