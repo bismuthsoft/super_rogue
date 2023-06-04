@@ -134,9 +134,7 @@
     (do
       (tset package.loaded :vision nil)
       (let [(status err) (pcall
-                          (lambda []
-                            (set vision (require :vision))
-                            (vision.get-visible-faces s.player.pos s.level-border)))]
+                          (lambda [] (set vision (require :vision))))]
         (if (= status false)
             (print (.. "ERROR: failed to reload vision. " err)))))))
 
