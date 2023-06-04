@@ -316,9 +316,9 @@
         :max-stamina 10
         :stamina-regen-rate 5
         :bullet-stamina-cost 6
-        :bullet-atk 100
+        :bullet-atk 80
         :melee-stamina-cost 3
-        :melee-atk 15
+        :melee-atk 20
         :movement-cost 2
         :hitbox {:size 8 :shape :circle}
         :show-line {:color [1 1 1 0.3]
@@ -381,8 +381,8 @@
         :enemy? true
         :color [.2 1 .2 1]
         :char "l"
-        :hp 6
-        :max-hp 6
+        :hp 5
+        :max-hp 5
         :atk 5
         :hitbox {:size 8 :shape :circle}
         :speed 30
@@ -404,7 +404,6 @@
         :generation (or ?generation 1)
         :seed-timer nil
         :seed-count 0})
-
      :tomato-seed
      (let [(pos generation) ...
            seed {: kind
