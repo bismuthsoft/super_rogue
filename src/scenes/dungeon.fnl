@@ -4,6 +4,7 @@
 (local util (require :util))
 (local draw (require :draw))
 (local collide (require :collide))
+(local vision (require :vision))
 (var mapgen (require :mapgen))
 (local lume (require :lib.lume))
 (local pp util.pp)
@@ -22,8 +23,9 @@
   (set s.level (+ s.level 1))
   (set s.actors [])
   (set s.actors-to-spawn [])
-  (set s.hurt-tallies {}) ;; list of hurt actors, keyed by table (for animation)
+  (set s.hurt-tallies {}) ;; list of hurt actors, keyed by actor (for animation)
   (set s.hurt-timers {})  ;; list of timers to show that the current attack has ended
+  (set s.last-seen-at {}) ;; list of places actors have been seen last
   (set s.will-delete {})
   (set s.elapsed-time 0)
   (set s.delta-time 0)
@@ -223,6 +225,8 @@
        {: kind
         : pos
         :friendly? true
+        :always-visible? true
+        :vision? true
         :color [1 1 1]
         :char "@"
         :angle 0
@@ -279,6 +283,7 @@
         :enemy? (not friendly?)
         :hitbox {:shape :line :size len}
         :color [1 0 0 1]
+        :always-visible? true
         : rotate-speed
         : expiry})
      :particle
@@ -286,6 +291,7 @@
        {: kind
         : angle
         : pos
+        :always-visible? true
         :color props.color
         :char props.char
         :char-scale props.char-scale
@@ -441,46 +447,60 @@
           (set actor.pos next-pos))))))
 
 (fn dungeon.draw-actors [s]
-  (each [i {: kind &as actor} (ipairs s.actors)]
-    (local [x y] actor.pos)
-    (case (?. actor :hitbox :shape)
-      :circle
-      (do
-        (love.graphics.setColor (if (. s.hurt-tallies actor)
-                                    [1 0 0 1]
-                                    [1 1 1 0.2]))
-        (love.graphics.setLineWidth 2)
-        (love.graphics.circle :line x y (- actor.hitbox.size 1)))
-      :line
-      (do
-        (draw.ray actor.pos [actor.angle actor.hitbox.size] 1 [1 1 1 0.2])))
-    (when (and actor.hp (not actor.hide-hp?) (not (>= actor.hp actor.max-hp)))
-      (draw.progress [[(vec2-op - actor.pos [10 15])] [20 5]]
-                     (/ actor.hp actor.max-hp)
-                     [1 0 0 1]))
-    (when actor.char
-      (love.graphics.setColor actor.color)
-      (local s (or actor.char-scale 1))
-      (love.graphics.printf actor.char x y 51 :center 0 s s 25 11))
-    (when actor.meters
-      (each [_ meter (pairs actor.meters)]
-        (let [value (. actor meter.value-field)
-              max (. actor meter.max-field)
-              pos (if (= meter.pos :follow)
-                      [(vec2-op + actor.pos [0 -10])]
-                      meter.pos)]
-          (draw.progress [pos meter.size] (/ value max) meter.color))))
-    (match actor.show-line
-      (where {: color : len})
-      (draw.ray actor.pos [actor.angle len] 1 color)
-      some_other
-      (do
-        (print (.. "Warning: invalid line for " actor.kind ": "))
-        (pp some_other)))
-    (case kind
-     :sword
+  (each [i actor (ipairs s.actors)]
+    (if
+     (or
+      (vision.see-between-points? s.player.pos actor.pos s.level-border)
+      actor.always-visible?)
      (do
-       (love.graphics.setColor actor.color)
+       (dungeon.draw-actor s actor)
+       (tset s.last-seen-at actor actor.pos))
+     (. s.last-seen-at actor)
+     (do
+       (love.graphics.setColorMask false false true true)
+       (dungeon.draw-actor s actor (. s.last-seen-at actor))
+       (love.graphics.setColorMask true true true true)))))
+
+(fn dungeon.draw-actor [s {: kind &as actor} ?last-seen-at]
+  (local [x y] (or ?last-seen-at actor.pos))
+  (case (?. actor :hitbox :shape)
+    :circle
+    (do
+      (love.graphics.setColor (if (. s.hurt-tallies actor)
+                                  [1 0 0 1]
+                                  [1 1 1 0.2]))
+      (love.graphics.setLineWidth 2)
+      (love.graphics.circle :line x y (- actor.hitbox.size 1)))
+    :line
+    (do
+      (draw.ray [x y] [actor.angle actor.hitbox.size] 1 [1 1 1 0.2])))
+  (when (and actor.hp (not actor.hide-hp?) (not (>= actor.hp actor.max-hp)))
+    (draw.progress [[(vec2-op - [x y] [10 15])] [20 5]]
+                   (/ actor.hp actor.max-hp)
+                   [1 0 0 1]))
+  (when actor.char
+    (love.graphics.setColor actor.color)
+    (local s (or actor.char-scale 1))
+    (love.graphics.printf actor.char x y 51 :center 0 s s 25 11))
+  (when actor.meters
+    (each [_ meter (pairs actor.meters)]
+      (let [value (. actor meter.value-field)
+            max (. actor meter.max-field)
+            pos (if (= meter.pos :follow)
+                    [(vec2-op + [x y] [0 -10])]
+                    meter.pos)]
+        (draw.progress [pos meter.size] (/ value max) meter.color))))
+  (match actor.show-line
+    (where {: color : len})
+    (draw.ray [x y] [actor.angle len] 1 color)
+    some_other
+    (do
+      (print (.. "Warning: invalid line for " actor.kind ": "))
+      (pp some_other)))
+  (case kind
+   :sword
+   (do
+    (love.graphics.setColor actor.color
        (love.graphics.arc :fill
                           x y
                           (- actor.hitbox.size 3)
