@@ -419,9 +419,10 @@
                                                    :killer-tomato
                                                    actor.pos
                                                    generation))
-                 :speed 50}]
+                 :speed 25}]
        (dungeon.actor-look-at-pos seed (unpack s.player.pos))
-       (dungeon.actor-step-forward seed 1 s.level-border)
+       (set (seed.angle) (+ seed.angle (math.random) -0.5))
+       (dungeon.actor-step-forward seed (+ 1 (math.random)) s.level-border)
        seed)
      :grid-bug
      (let [pos ...]
@@ -449,6 +450,15 @@
         :char-scale 1
         :hitbox {:size 5 :shape :circle}
         :collect {:money 1}})
+     :tomato
+     (let [pos ...]
+       {: kind
+        :name "tomato"
+        : pos
+        :color [1 0 0]
+        :char "ó"
+        :hitbox {:size 5 :shape :circle}
+        :collect {:hp 1}})
      :stairs-down
      (let [pos ...]
        {: kind
@@ -480,11 +490,18 @@
     (where [{:money value} s.player])
     (do
       (set s.stats.money (+ s.stats.money value))
-      (table.insert
-       s.log
-       (.. "You collected a " actor.name " worth $" value))
       (dungeon.delete-actor s actor)
+      (table.insert s.log
+        (.. "You collected a " actor.name " worth $" value))
+      (lua "return"))
+    (where [{:hp value} s.player])
+    (do
+      (dungeon.heal-actor s s.player value)
+      (dungeon.delete-actor s actor)
+      (table.insert s.log
+        (.. "You ate " actor.name " and felt a bit better."))
       (lua "return")))
+
   (when (and
          actor.atk
          (or
@@ -522,16 +539,20 @@
     (tset s.hurt-timers actor (/ 1 20))
     (when (< actor.hp 0)
       (dungeon.spawn-particles s :circle actor.pos {:color actor.color :count 20})
+      (when actor.enemy?
+        (do
+          (tset s.stats.vanquished actor.name (+ 1 (or (. s.stats.vanquished actor.name)
+                                                       0)))
+          (set msg (.. "The " actor.name " is destroyed."))))
       (match actor.kind
         :player
         (do
           (set s.time-til-game-over (+ s.elapsed-time 2))
           (set s.msg "You died!"))
-        monster
-        (do
-          (tset s.stats.vanquished actor.name (+ 1 (or (. s.stats.vanquished actor.name)
-                                                       0)))
-          (set msg (.. "The " actor.name " is destroyed."))))
+        :killer-tomato
+        (when (< (love.math.random) 0.2)
+            (dungeon.spawn-actor s :tomato actor.pos)
+            (set msg (.. "The Killer Tomato became docile!"))))
       (dungeon.delete-actor s actor)))
   (when msg
     (table.insert s.log msg))
