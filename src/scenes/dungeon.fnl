@@ -297,7 +297,7 @@
         :char "@"
         :char-scale 1.3
         :angle 0
-        :speed 120
+        :speed 90
         :hp 3
         :max-hp 4
         :hide-hp? true
