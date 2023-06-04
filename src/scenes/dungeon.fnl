@@ -383,6 +383,16 @@
         :angle 0
         :ai {:kind :random}
         :hitbox {:size 4 :shape :circle}})
+     :gold-coin
+     (let [pos ...]
+       {: kind
+        :name "gold coin"
+        : pos
+        :color [1 0.8 0 1]
+        :char "o"
+        :char-scale 1
+        :hitbox {:size 5 :shape :circle}
+        :collect {:money 1}})
      :stairs-down
      (let [pos ...]
        {: kind
@@ -407,6 +417,28 @@
      _
      (error (.. "Unknown Actor kind: " kind)))))
 
+(fn dungeon.collide-actors [s actor other dt]
+  (match [actor.collect other]
+    (where [{:money value} s.player])
+    (do
+      (set s.stats.money (+ s.stats.money value))
+      (table.insert
+       s.log
+       (.. "You collected a " actor.name " worth $" value))
+      (dungeon.delete-actor s actor)
+      (lua "return")))
+  (when (and
+         actor.atk
+         (= actor.friendly? other.enemy?))
+    (local dmg (* actor.atk dt))
+    (table.insert
+     s.log
+     (match actor.kind
+       :sword
+       (.. "You slash at the " other.name ".")
+       (where _ (not= other.kind :sword))
+       (.. "The " actor.name " hurts you.")))
+    (dungeon.damage-actor s other dmg)))
 ;;; damage-actor returns nil.
 (fn dungeon.damage-actor [s actor atk]
   (var msg nil)
@@ -444,20 +476,13 @@
 (fn dungeon.update-actors [s dt]
   (each [i {: kind &as actor} (ipairs s.actors)]
     ;; hitboxes
-    (when (and actor.hitbox actor.atk)
+    (when actor.hitbox
       (each [_ other (ipairs s.actors)]
-        (when (and other.hitbox
-                   (not= actor.friendly? other.friendly?)
-                   (collide.actors-collide? actor other))
-          (local dmg (* actor.atk dt))
-          (table.insert
-           s.log
-           (match kind
-             :sword
-             (.. "You slash at the " other.name ".")
-             (where _ (not= other.kind :sword))
-             (.. "The " actor.name " hurts you.")))
-          (dungeon.damage-actor s other dmg))))
+        (when (and
+               (not= actor other)
+               other.hitbox
+               (collide.actors-collide? actor other))
+          (dungeon.collide-actors s actor other dt))))
 
     ;; automatic death
     (when (and actor.expiry
