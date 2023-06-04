@@ -8,7 +8,7 @@
 (fn vision.see-between-points? [p1 p2 border]
   (not (geom.lineseg-polygon-intersection [p1 p2] border)))
 
-(fn vision.get-visible-faces [pos border]
+(fn vision.get-visible [pos border]
   (var visible [])
   (each [i vertex (ipairs border)]
     (let [count (geom.lineseg-polygon-intersection-count [pos vertex] border)]
@@ -17,7 +17,7 @@
   visible)
 
 (fn vision.update-visible [seen pos border]
-  (local visible (vision.get-visible-faces pos border))
+  (local visible (vision.get-visible pos border))
   (for [i 1 (length border)]
     (when (. visible i)
       (tset seen i true)))

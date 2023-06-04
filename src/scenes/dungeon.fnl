@@ -31,13 +31,13 @@
   (set s.elapsed-time 0)  ; ingame timer for freezable entities
   (set s.delta-time 0)    ; ingame timer step
   (set s.actors-seen {}) ; list of places actors have been seen last
-  (set s.border-seen [])  ; list of what level faces have been seen
   (set s.time-til-game-over nil)
   (set s.freeze-player-until -100000)
   (let [(polygon actors) (mapgen.generate-level s.level (dungeon.size s))]
     (set s.level-border polygon)
     (each [_ args (ipairs actors)]
-      (dungeon.spawn-actor s (unpack args)))))
+      (dungeon.spawn-actor s (unpack args))))
+  (set s.border-seen (vision.get-visible s.player.pos s.level-border)))
 
 (fn dungeon.update [s dt]
   (match s.time-til-game-over
