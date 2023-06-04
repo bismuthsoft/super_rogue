@@ -49,7 +49,7 @@
   (local GRAY [.7 .7 .7 1])
   (print-line "-------- Enemies vanquished --------" GRAY)
   (each [monster count (pairs s.vanquished)]
-    (print-line [(monster:gsub "[-_]" " ") (tostring count)] GRAY))
+    (print-line [monster (tostring count)] GRAY))
   (print-line)
   (print-line "------- Last 10 log messages -------" GRAY)
   (each [_ message (ipairs (lume.last s.log 10))]

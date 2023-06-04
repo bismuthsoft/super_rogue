@@ -125,7 +125,7 @@
       (when (< distance 20)
          (if (= nearest.kind :stairs-down)
              (dungeon.next-level s)
-             (print "Stairs Blocked by" nearest.kind)))) ;; TODO: log warning -- stairs blocked
+             (table.insert s.log (.. "Stairs blocked by " nearest.name)))))
     (where (or "." :tab))
     (set s.freeze-player-until (+ s.elapsed-time 0.5))
     :space
@@ -270,6 +270,7 @@
      :player
      (let [pos ...]
        {: kind
+        :name "player"
         : pos
         :friendly? true
         :always-visible? true
@@ -307,6 +308,7 @@
      :bullet
      (let [(pos angle friendly? atk) ...]
         {: kind
+         :name "bullet"
          : friendly?
          : pos
          : angle
@@ -323,6 +325,7 @@
            rotate-speed (/ arc-len duration)
            expiry (+ s.elapsed-time duration)]
        {: kind
+        :name "sword"
         : pos
         : angle
         : friendly?
@@ -333,21 +336,10 @@
         :always-visible? true
         : rotate-speed
         : expiry})
-     :particle
-     (let [(pos angle props) ...]
-       {: kind
-        : angle
-        : pos
-        :always-visible? true
-        :color props.color
-        :char props.char
-        :char-scale props.char-scale
-        :show-line props.show-line
-        :expiry (+ s.elapsed-time props.lifetime)
-        :speed props.speed})
      :killer-tomato
      (let [(pos ?generation) ...]
        {: kind
+        :name "killer tomato"
         : pos
         :enemy? true
         :color [1 0 0]
@@ -362,7 +354,8 @@
 
      :tomato-seed
      (let [(pos generation) ...
-           seed {
+           seed {: kind
+                 :name "tomato seed"
                  : pos
                  :char "•"
                  :color [0 1 0]
@@ -380,6 +373,7 @@
      :grid-bug
      (let [pos ...]
        {: kind
+        :name "Gridbug"
         : pos
         :enemy? true
         :color [(lume.color "#811A74")]
@@ -394,10 +388,24 @@
      :stairs-down
      (let [pos ...]
        {: kind
+        :name "downward staircase"
         : pos
         :color [1 0.7 0 1]
         :char ">"
         :hitbox {:size 8 :shape :circle}})
+     :particle
+     (let [(pos angle props) ...]
+       {: kind
+        :name "particle"
+        : angle
+        : pos
+        :always-visible? true
+        :color props.color
+        :char props.char
+        :char-scale props.char-scale
+        :show-line props.show-line
+        :expiry (+ s.elapsed-time props.lifetime)
+        :speed props.speed})
      _
      (error (.. "Unknown Actor kind: " kind)))))
 
@@ -414,12 +422,12 @@
         :player
         (do
           (set s.time-til-game-over (+ s.elapsed-time 2))
-          (set msg "You died!"))
+          (set s.msg "You died!"))
         monster
         (do
-          (tset s.stats.vanquished monster (+ 1 (or (. s.stats.vanquished monster)
-                                                    0)))
-          (set msg (.. "The " (monster:gsub "[-_]" " ") " is destroyed."))))
+          (tset s.stats.vanquished actor.name (+ 1 (or (. s.stats.vanquished actor.name)
+                                                       0)))
+          (set msg (.. "The " actor.name " is destroyed."))))
       (dungeon.delete-actor s actor)))
   (when msg
     (table.insert s.log msg))
@@ -448,9 +456,9 @@
            s.log
            (match kind
              :sword
-             (.. "You slash at the " (other.kind:gsub "[-_]" " ") ".")
+             (.. "You slash at the " other.name ".")
              (where _ (not= other.kind :sword))
-             (.. "The " (kind:gsub "[-_]" " ") " hurts you.")))
+             (.. "The " actor.name " hurts you.")))
           (dungeon.damage-actor s other dmg))))
 
     ;; automatic death
@@ -519,7 +527,7 @@
                        (not= actor.friendly? other.friendly?)
                        (geom.lineseg-in-circle? movement-lineseg
                                                 [other.pos other.hitbox.size]))
-              (table.insert s.log (.. "You shot the " (other.kind:gsub "[-_]" " ")))
+              (table.insert s.log (.. "You shot the " other.name))
               (dungeon.damage-actor s other actor.atk)
               (dungeon.delete-actor s actor)))
           (set actor.pos next-pos))))))
