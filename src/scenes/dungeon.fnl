@@ -272,9 +272,9 @@
     (let [(pos friendly? atk) ...
           random-offset (lambda [] (- (* (math.random) 20) 10))
           pos [(vec2-op + pos [(random-offset) (random-offset)])]
-          num (if (< atk 1)
-                  (.. "." (math.floor (* atk 10)))
-                  (math.floor atk))]
+          num (if (< atk 0.95)
+                  (.. "." (lume.round (* atk 10)))
+                  (lume.round atk))]
       (dungeon.spawn-actor s :particle pos (/ math.pi -2)
                            {:color (if friendly? [1 0.5 0.5 1] [1 0 0 1])
                             :lifetime 1
