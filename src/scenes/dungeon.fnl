@@ -274,6 +274,7 @@
         :vision? true
         :color [1 1 1]
         :char "@"
+        :char-scale 1.3
         :angle 0
         :speed 120
         :hp 3
@@ -375,6 +376,7 @@
         :enemy? true
         :color [(lume.color "#811A74")]
         :char "x"
+        :char-scale 0.8
         :hp 1
         :max-hp 1
         :atk 2
