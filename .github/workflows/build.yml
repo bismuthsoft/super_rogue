@@ -55,7 +55,7 @@ jobs:
               >> "$GITHUB_OUTPUT"
         id: dot_love
       - name: Build Linux packages
-        id: build-packages
+        id: build-linux-packages
         uses: love-actions/love-actions-linux@v1
         with:
           app-name: Super Rogue
@@ -70,7 +70,7 @@ jobs:
           product-name: super_rogue
           output-folder: ./dist
       - name: Build macOS packages
-        id: build-packages
+        id: build-mac-packages
         uses: love-action/love-actions-macos-portable@v1
         with:
           app-name: "Super Rogue"
