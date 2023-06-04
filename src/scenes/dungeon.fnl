@@ -12,7 +12,12 @@
 (local dungeon {})
 
 (fn dungeon.init []
-  (let [state {:level 0}]
+  (let [state {:level 0
+               :elapsed-time 0
+               :delta-time 0
+               :stats {:vanquished {}
+                       :money 0}
+               :log []}]
     (dungeon.next-level state)
     state))
 
@@ -21,20 +26,14 @@
 
 (fn dungeon.next-level [s]
   (set s.level (+ s.level 1))
-  (set s.stats {:vanquished {}
-                :gold 0})
   (set s.actors [])
-  (set s.log
-       (let [log (or s.log [])]
-         (table.insert log (lume.format "Welcome to dungeon level {level}" s))
-         log))
+  (table.insert s.log
+                (lume.format "Welcome to dungeon level {level}" s))
   (set s.actors-to-spawn [])
-  (set s.hurt-tallies {}) ; list of hurt actors, keyed by actor (for animation)
-  (set s.hurt-timers {})  ; list of timers to show that the current attack has ended
-  (set s.will-delete {})
-  (set s.elapsed-time 0)  ; ingame timer for freezable entities
-  (set s.delta-time 0)    ; ingame timer step
-  (set s.actors-seen {}) ; list of places actors have been seen last
+  (set s.hurt-tallies {}) ; map of <actor,tally> to combine hp of hits
+  (set s.hurt-timers {})  ; map of <actor,timestamp> to combine hp of hits
+  (set s.will-delete {})  ; map of <actor,will-delete?> to delete actors
+  (set s.actors-seen {})  ; map of <actor,place> where have been seen last
   (set s.time-til-game-over nil)
   (set s.freeze-player-until -100000)
   (let [(polygon actors) (mapgen.generate-level s.level (dungeon.size s))]
