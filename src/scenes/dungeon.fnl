@@ -307,7 +307,7 @@
         :bullet-stamina-cost 6
         :bullet-atk 100
         :melee-stamina-cost 3
-        :melee-atk 10
+        :melee-atk 15
         :movement-cost 2
         :hitbox {:size 8 :shape :circle}
         :show-line {:color [1 1 1 0.3]
@@ -370,8 +370,8 @@
         :enemy? true
         :color [.2 1 .2 1]
         :char "l"
-        :hp 4
-        :max-hp 4
+        :hp 6
+        :max-hp 6
         :atk 5
         :hitbox {:size 8 :shape :circle}
         :speed 30
