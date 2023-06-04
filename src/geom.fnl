@@ -154,6 +154,12 @@
          isect? (geom.lineseg-lineseg-intersection lineseg [q1 q2])]
      (if isect? true false))))
 
+(fn geom.lineseg-polygon-intersection-count [lineseg polygon]
+  (let [map (geom.lineseg-polygon-intersection-map lineseg polygon)]
+    (faccumulate [sum 0
+                  i 1 (length polygon)]
+      (if (. map i) (+ sum 1) sum))))
+
 (fn geom.point-circle-intersection [point [origin radius]]
   (if (< (geom.distance (vec2-op - point origin)) radius)
     point))
