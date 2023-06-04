@@ -28,8 +28,8 @@
                 i v (ipairs list)]
      (let [score (f v i)
            skip (and ?self (= ?self v))]
-       (if (or (not (. top 1))
-               (and (not skip) (> score (. top 3))))
+       (if (and (not skip)
+                (or (not (. top 1)) (> score (. top 3))))
            [v i score]
            top)))))
 
@@ -37,12 +37,14 @@
   (util.max-by-score
    positions
    (lambda [v]
-     (geom.distance (vec2-op - pos v)))))
+     (geom.distance (vec2-op - pos v)))
+   pos))
 
 (fn util.nearest [pos positions]
   (util.max-by-score
    positions
    (lambda [v]
-     (geom.distance (vec2-op - pos v)))))
+     (geom.distance (vec2-op - pos v)))
+   pos))
 
 util
