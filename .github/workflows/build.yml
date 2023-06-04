@@ -72,7 +72,7 @@ jobs:
           output-folder: ./dist
       - name: Build macOS packages
         id: build-mac-packages
-        uses: love-actions/love-actions-macos-portable@v1
+        uses: winny-/love-actions-macos-portable@productivityTweaks
         with:
           app-name: "Super Rogue"
           bundle-id: "top.workinprogress.super_rogue"
