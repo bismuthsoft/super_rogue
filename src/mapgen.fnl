@@ -51,11 +51,17 @@
   ;; place stairs down in furthest room from player
   ;; NOTE: it is intentional that enemies can generate on top of stairs.
   ;; He's blocking the stairway!
-  (local (_ furthest-room-idx) (util.furthest
-                                (. centers player-room-index)
-                                centers))
-  (add-actor :stairs-down (. rooms furthest-room-idx) 0)
+  (local (_ furthest-room-index) (util.furthest
+                                  (. centers player-room-index)
+                                  centers))
+  (table.insert
+   actor-list
+   [:stairs-down [(mapgen.bounding-box-center (. bboxes furthest-room-index))]])
 
+  ;; allows stairs to be blocked on purpose
+  ;; (table.insert
+  ;;  actor-list
+  ;;  [:killer-tomato [(vec2-op + [10 0] [(mapgen.bounding-box-center (. bboxes furthest-room-index))])]])
 
   (values level-border actor-list))
 

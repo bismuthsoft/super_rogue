@@ -108,11 +108,11 @@
     (scene.set :dungeon-help s)
     (where "." (util.shift-down?))
     (do
-      (local distance (geom.distance (vec2-op -
-                                              s.player.pos
-                                              s.stairs-down.pos)))
-      (if (< distance 16)
-          (dungeon.next-level s)))
+      (local (nearest _ distance) (dungeon.nearest-actor s s.player))
+      (when (< distance 20)
+         (if (= nearest.kind :stairs-down)
+             (dungeon.next-level s)
+             (print "Stairs Blocked by" nearest.kind)))) ;; TODO: log warning -- stairs blocked
     (where (or "." :tab))
     (set s.freeze-player-until (+ s.elapsed-time 0.5))
     :space
@@ -203,6 +203,15 @@
 (fn dungeon.actor-look-at-pos [actor x y]
   (set actor.angle
        (geom.angle (vec2-op - [x y] actor.pos))))
+
+(fn dungeon.nearest-actor [s actor]
+  (local tangible-actors
+         (icollect [i v (ipairs s.actors)]
+           (and v.hitbox v)))
+  (util.max-by-score
+   tangible-actors
+   #(- (geom.distance (vec2-op - actor.pos (. $1 :pos))))
+   actor))
 
 ;; move a 'step' pixels towards b, return the result
 (fn dungeon.step-vec-towards [a b step]
