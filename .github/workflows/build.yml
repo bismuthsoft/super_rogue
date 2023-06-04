@@ -101,7 +101,7 @@ jobs:
           app-name: "Super Rogue"
           bundle-id: "top.workinprogress.super_rogue"
           copyright: "Copyright © 2023 44100hz & winny All Rights Reserved."
-          icon-path: ./assets/macOS/icon.icns
+          icon-path: ./src/assets/super_rogue.icns
           love-ref: "fc3f5ee6209a0aab9a4d381ed5cd99110f9ff2f2"
           love-package: ${{ steps.dot_love.outputs.DOT_LOVE }}
           # extra-assets: ./README.md ./license.txt
