@@ -43,7 +43,7 @@
   (print-line "GAME OVER" [.9 0 0 1])
   (print-line)
   (print-line (lume.format "You survived for {elapsed} seconds."
-                           {:elapsed (lume.round s.elapsed-time .01)}))
+                           {:elapsed (lume.round s.lifetime .01)}))
   (print-line)
   (print-line "-------- Enemies vanquished --------" [.7 .7 .7 1])
   (each [monster count (pairs s.vanquished)]

@@ -40,7 +40,6 @@
   (match s.time-til-game-over
     (where ttm (< ttm s.elapsed-time))
     (do
-      (set s.stats.elapsed-time s.elapsed-time)
       (scene.set :game-over s.stats))
     (where ttm)
     (set s.delta-time dt))
@@ -358,7 +357,9 @@
       (dungeon.spawn-particles s :circle actor.pos {:color actor.color :count 20})
       (match actor.kind
         :player
-        (set s.time-til-game-over (+ s.elapsed-time 2))
+        (do
+          (set s.time-til-game-over (+ s.elapsed-time 2))
+          (set s.stats.lifetime s.elapsed-time))
         monster
         (tset s.stats.vanquished monster (+ 1 (or (. s.stats.vanquished monster)
                                                   0))))
