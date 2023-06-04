@@ -445,7 +445,7 @@
         :name "gold coin"
         : pos
         :color [1 0.8 0 1]
-        :char "o"
+        :char "$"
         :char-scale 1
         :hitbox {:size 5 :shape :circle}
         :collect {:money 1}})
