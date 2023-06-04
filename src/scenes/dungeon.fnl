@@ -482,10 +482,14 @@
     (local dmg (* actor.atk dt))
     (table.insert
      s.log
-     (match actor.kind
-       :sword
+     (match [actor.kind other.kind]
+       [:sword _]
        (.. "You slash at the " other.name ".")
-       (where _ (not= other.kind :sword))
+       [:bullet _]
+       (if other.enemy?
+         (.. "Your bullet pierces the " other.name ".")
+         (.. "The enemy " actor.name " bombards you."))
+       [_ :player]
        (.. "The " actor.name " hurts you.")))
     (dungeon.damage-actor s other dmg)))
 
