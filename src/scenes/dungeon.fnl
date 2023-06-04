@@ -338,7 +338,7 @@
         : angle
         : color
         :hitbox {:shape :line :size 6}
-        :show-line {: color :len 6}
+        :show-line {: color :len 6 :thickness 2}
         :expiry props.expiry
         : atk
         : speed})
@@ -683,8 +683,8 @@
                     meter.pos)]
         (draw.progress [pos meter.size] (/ value max) meter.color))))
   (match actor.show-line
-    (where {: color : len})
-    (draw.ray [x y] [actor.angle len] 1 color)
+    (where {: color : len &as line})
+    (draw.ray [x y] [actor.angle len] (or line.thickness 1) color)
     some_other
     (do
       (print (.. "Warning: invalid line for " actor.kind ": "))
