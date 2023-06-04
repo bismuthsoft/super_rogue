@@ -6,7 +6,9 @@
 (fn help.init [dungeon-state]
   {: dungeon-state})
 
-(fn help.keypressed [s]
+(fn help.keypressed [s keycode scancode]
+  (when (scene.global-keys.handle-keypressed keycode scancode)
+    (lua "return"))
   (scene.bind dungeon s.dungeon-state))
 
 (fn help.size [s ...]
@@ -15,6 +17,8 @@
 (local
  HELP-ENTRIES
  [["/, ?, or F1" "This help menu"]
+  ["Alt+Return" "Toggle fullscreen"]
+  ["" ""]
   ["Spacebar" "Melee attack"]
   ["Right Mouse button" "Melee attack"]
   ["Left mouse button" "Fire projectile"]
