@@ -12,18 +12,21 @@
     (let [rooms (mapgen.random-polygons w h)]
       (if (> (length rooms) 3) rooms (gen-rooms))))
   (local rooms (gen-rooms))
+  (local bboxes (icollect [_ room (ipairs rooms)]
+                  (mapgen.polygon-bounding-box room)))
   ;; join them into level border
   (local level-border (mapgen.join-polygons (unpack rooms)))
 
+  ;; place actors...
   (local actor-list [])
   (fn add-actor [kind room ...]
-    (table.insert actor-list
-                  [kind
-                   [(mapgen.random-point-in-polygon room)]
-                   ...]))
+    (let [pos [(mapgen.random-point-near-polygon-center room nil 0.8)]]
+      (table.insert actor-list [kind pos ...])))
+
   ;; put player in room of own
   (local player-room-index (love.math.random 1 (length rooms)))
-  (add-actor :player (. rooms player-room-index))
+  (local player-room (. rooms player-room-index))
+  (add-actor :player player-room)
 
   ;; place 10 enemies
   (while (< (length actor-list) 10)
@@ -34,6 +37,21 @@
           (when (< (love.math.random) 0.3)
             (add-actor :killer-tomato poly)))))
 
+  ;; place stairs down in furthest room from player
+  (var furthest-room-idx nil)
+  (var furthest-room-distance -1000)
+  (each [i bbox (ipairs bboxes)]
+    (let [distance
+          (geom.distance
+           (vec2-op
+            -
+            [(mapgen.bounding-box-center (. bboxes i))]
+            [(mapgen.bounding-box-center (. bboxes player-room-index))]))]
+      (when (< furthest-room-distance distance)
+        (set furthest-room-idx i)
+        (set furthest-room-distance distance))))
+  (add-actor :stairs-down (. rooms furthest-room-idx))
+
   (values level-border actor-list))
 
 (fn mapgen.random-polygons [w h]
@@ -41,11 +59,12 @@
   (var polygons [])
   (for [i 1 100]
     (let [margin 150
-          next-poly (geom.polygon {:sides (love.math.random 3 12)
-                                   :origin [(love.math.random margin (- w margin))
-                                            (love.math.random margin (- h margin))]
-                                   :size (love.math.random 50 200)
-                                   :angle (* 2 math.pi (love.math.random))})
+          next-poly (geom.polygon
+                     {:sides (love.math.random 3 12)
+                      :origin [(love.math.random margin (- w margin))
+                               (love.math.random margin (- h margin))]
+                      :size (love.math.random 50 100)
+                      :angle (* 2 math.pi (love.math.random))})
           collision?
           (accumulate [collision? false
                        _ poly (ipairs polygons)
@@ -72,12 +91,25 @@
      (+ x (* w (love.math.random)))
      (+ y (* h (love.math.random))))))
 
+(fn mapgen.bounding-box-center [[x1 y1 x2 y2]]
+  (values (/ (+ x1 x2) 2) (/ (+ y1 y2) 2)))
+
 (fn mapgen.random-point-in-polygon [polygon ?rect]
   (let [rect (or ?rect (mapgen.polygon-bounding-box polygon))
         point [(mapgen.random-point-in-rect (unpack rect))]]
     (if (geom.point-in-polygon? point polygon)
         (unpack point)
         (mapgen.random-point-in-polygon polygon rect))))
+
+(fn mapgen.random-point-near-polygon-center [polygon ?rect ?distance]
+  (let [rect (or ?rect (mapgen.polygon-bounding-box polygon))
+        distance (or ?distance 0.8)
+        point [(mapgen.random-point-in-rect (unpack rect))]
+        center [(mapgen.bounding-box-center rect)]
+        point [(vec2-op #(lume.lerp $1 $2 distance) center point)]]
+    (if (geom.point-in-polygon? point polygon)
+        (unpack point)
+        (mapgen.random-point-near-polygon-center polygon rect distance))))
 
 (fn mapgen.join-polygons [...]
   (var poly-out nil)

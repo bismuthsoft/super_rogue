@@ -106,9 +106,14 @@
   (match scancode
     (where (or :/ :? :f1))
     (scene.set :dungeon-help s)
+    (where "." (util.shift-down?))
+    (do
+      (local distance (geom.distance (vec2-op -
+                                              s.player.pos
+                                              s.stairs-down.pos)))
+      (if (< distance 16)
+          (dungeon.next-level s)))
     (where (or "." :tab))
-    (set s.freeze-player-until (+ s.elapsed-time 0.5))
-    "."
     (set s.freeze-player-until (+ s.elapsed-time 0.5))
     :space
     (dungeon.swing-player-sword s)
@@ -119,7 +124,8 @@
       (let [(status err) (pcall
                           (lambda []
                             (set mapgen (require :mapgen))
-                            (dungeon.next-level s)))]
+                            (dungeon.next-level s)
+                            (for [i 1 1000] (tset s.border-seen i true))))]
         (if (= status false)
             (print (.. "ERROR: failed to reload map. " err)))))
     :f6
@@ -364,8 +370,15 @@
         :angle 0
         :ai {:kind :random}
         :hitbox {:size 4 :shape :circle}})
+     :stairs-down
+     (let [pos ...]
+       {: kind
+        : pos
+        :color [1 0.7 0 1]
+        :char ">"
+        :hitbox {:size 8 :shape :circle}})
      _
-     (error (.. "Unknown Actor kind" kind)))))
+     (error (.. "Unknown Actor kind: " kind)))))
 
 (fn dungeon.damage-actor [s actor atk]
   (when actor.hp
@@ -385,8 +398,8 @@
 (fn dungeon.insert-actor [s {: kind &as props}]
   (table.insert s.actors-to-spawn props)
   (if
-   (= kind :player)
-   (set s.player props))
+   (= kind :player) (set s.player props)
+   (= kind :stairs-down) (set s.stairs-down props))
   props)
 
 (fn dungeon.delete-actor [s actor]
@@ -482,12 +495,13 @@
        (tset s.actors-seen actor actor.pos))
      (. s.actors-seen actor)
      (do
-       (love.graphics.setColorMask false false true true)
+       (when (not= actor.kind :stairs-down)
+           (love.graphics.setColorMask false false true true))
        (dungeon.draw-actor s actor (. s.actors-seen actor))
        (love.graphics.setColorMask true true true true)))))
 
-(fn dungeon.draw-actor [s {: kind &as actor} ?actors-seen]
-  (local [x y] (or ?actors-seen actor.pos))
+(fn dungeon.draw-actor [s {: kind &as actor} ?last-seen-at]
+  (local [x y] (or ?last-seen-at actor.pos))
   (case (?. actor :hitbox :shape)
     :circle
     (do
@@ -535,7 +549,7 @@
 
 (fn dungeon.update-player [s dt]
   ;; keyboard input
-  (let [shifted? (or (love.keyboard.isDown :lshift) (love.keyboard.isDown :rshift))
+  (let [shift-down? (util.shift-down?)
         key-offsets {:a [-1 0] :h [-1 0] :left [-1 0]
                      :s [0 1] :j [0 1] :down [0 1]
                      :w [0 -1] :k [0 -1] :up [0 -1]
@@ -549,7 +563,7 @@
                 pos))
           (angle distance) (geom.rectangular->polar (unpack offset))]
       (when (> distance 0)
-           (let [speed (* s.player.speed dt (if shifted? 0.2 1))
+           (let [speed (* s.player.speed dt (if shift-down? 0.2 1))
                  offset [(geom.polar->rectangular
                           angle
                           speed)]

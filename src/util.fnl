@@ -14,4 +14,7 @@
     (flatten array)
     out))
 
+(fn util.shift-down? []
+  (or (love.keyboard.isDown :lshift) (love.keyboard.isDown :rshift)))
+
 util
