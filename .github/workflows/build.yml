@@ -75,6 +75,7 @@ jobs:
           name: dist-linux
           path: dist
   mac:
+    if: ${{ false }}  # Broken so just skip for now.
     needs:
       - test
     runs-on: macos-latest
@@ -129,8 +130,7 @@ jobs:
           name: dist-mac
           path: dist
 
-
-  windows:
+  store_dot_love:
     needs:
       - test
     runs-on: ubuntu-latest
@@ -150,11 +150,26 @@ jobs:
               "$(nix eval --raw .#super_rogue.dot_love)/super_rogue.love" \
               >> "$GITHUB_OUTPUT"
         id: dot_love
+      - uses: actions/upload-artifact@v3
+        with:
+          name: dot_love-${{ github.sha }}
+          path: ${{ steps.dot_love.outputs.DOT_LOVE }}
+
+  windows:
+    needs:
+      - test
+      - store_dot_love
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: dot_love-${{ github.sha }}
       - name: Build Windows packages
         id: build-windows
         uses: love-actions/love-actions-windows@v1
         with:
-          love-package: ${{ steps.dot_love.outputs.DOT_LOVE }}
+          love-package: ./super_rogue.love
           icon-path: ./assets/super_rogue.ico
           # rc-path: ./assets/template.rc
           product-name: super_rogue
