@@ -99,7 +99,9 @@
   (vision.draw-visible-border s.level-border s.border-seen)
   (dungeon.draw-actors s)
   (love.graphics.setColor [1 1 1 1])
-  (love.graphics.print (lume.format "elapsed-time {elapsed-time}" s) 10 10)
+  (love.graphics.print (lume.format "Level: {level} // Time: {time}"
+                                    {:time (lume.round s.elapsed-time .001) :level s.level})
+                       10 10)
   (love.graphics.setColor [.5 .5 .5 1])
   (love.graphics.print "Press F1, /, or ? for help" 500 10)
   (when (> (length s.log) 0)
