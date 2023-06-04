@@ -30,13 +30,27 @@
           maintainers = with maintainers; [ winny ];
         };
       };
+    dot_love = pkgs.stdenv.mkDerivation {
+      pname = "super_rogue.love";
+      version = "0.0.1";
+      src = ./.;
+      buildInputs = [ pkgs.zip ];
+      buildPhase = ''
+        cd src
+        zip -r super_rogue.love .
+      '';
+      installPhase = ''
+        mkdir -p $out/
+        cp super_rogue.love $out/
+      '';
+    };
     web_src = pkgs.stdenv.mkDerivation {
       pname = "super_rogue (web)";
       version = "0.0.1";
       src = ./.;
       buildInputs = [ love_js ];
       buildPhase = ''
-        echo Super Rogue | love.js -c src public
+        echo Super Rogue | love.js -c ${dot_love}/super_rogue.love public
       '';
       installPhase = ''
         cp -r public/ $out/
@@ -44,8 +58,7 @@
     };
     love_src = pkgs.copyPathToStore ./src;
     desktop = pkgs.writeShellScriptBin "super_rogue" ''
-      cd ${love_src}
-      exec ${pkgs.love}/bin/love .
+      exec ${pkgs.love}/bin/love ${dot_love}/super_rogue.love
     '';
     # Probably better way to do this?
     test = pkgs.writeShellScriptBin "super_rogue-test" ''
@@ -57,6 +70,7 @@
     ci.s5cmd = pkgs.s5cmd;
 
     super_rogue = {
+      inherit dot_love;
       inherit desktop;
       inherit test;
       web.src = web_src;
