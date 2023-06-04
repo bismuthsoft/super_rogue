@@ -9,61 +9,57 @@
 (fn mapgen.generate-level [level w h]
   ;; place at least 4 rooms
   (fn gen-rooms []
-    (let [rooms (mapgen.random-polygons w h)]
+    (let [rooms (mapgen.random-polygons w h 10)]
       (if (> (length rooms) 3) rooms (gen-rooms))))
   (local rooms (gen-rooms))
   (local bboxes (icollect [_ room (ipairs rooms)]
                   (mapgen.polygon-bounding-box room)))
+  (local centers (icollect [_ v (ipairs bboxes)]
+                   [(mapgen.bounding-box-center v)]))
+
   ;; join them into level border
   (local level-border (mapgen.join-polygons (unpack rooms)))
 
   ;; place actors...
   (local actor-list [])
-  (fn add-actor [kind room ...]
-    (let [pos [(mapgen.random-point-near-polygon-center room nil 0.8)]]
-      (table.insert actor-list [kind pos ...])))
+  (fn add-actor [kind room distance]
+    (let [pos [(mapgen.random-point-near-polygon-center room nil distance)]]
+      (table.insert actor-list [kind pos])))
 
   ;; put player in room of own
   (local player-room-index (love.math.random 1 (length rooms)))
   (local player-room (. rooms player-room-index))
-  (add-actor :player player-room)
+  (add-actor :player player-room 0)
 
   ;; place 10 enemies
   (while (< (length actor-list) 10)
     (each [index poly (ipairs rooms)]
         (when (not= index player-room-index)
           (when (< (love.math.random) 0.5)
-            (add-actor :grid-bug poly))
+            (add-actor :grid-bug poly 1))
           (when (< (love.math.random) 0.3)
-            (add-actor :killer-tomato poly)))))
+            (add-actor :killer-tomato poly 0.5)))))
 
   ;; place stairs down in furthest room from player
-  (var furthest-room-idx nil)
-  (var furthest-room-distance -1000)
-  (each [i bbox (ipairs bboxes)]
-    (let [distance
-          (geom.distance
-           (vec2-op
-            -
-            [(mapgen.bounding-box-center (. bboxes i))]
-            [(mapgen.bounding-box-center (. bboxes player-room-index))]))]
-      (when (< furthest-room-distance distance)
-        (set furthest-room-idx i)
-        (set furthest-room-distance distance))))
-  (add-actor :stairs-down (. rooms furthest-room-idx))
+  (local (_ furthest-room-idx) (util.index-of-furthest
+                                (. centers player-room-index)
+                                centers))
+  (add-actor :stairs-down (. rooms furthest-room-idx) 0)
 
   (values level-border actor-list))
 
-(fn mapgen.random-polygons [w h]
+(fn mapgen.random-polygons [w h max]
   ;; w and h are maximum size
   (var polygons [])
-  (for [i 1 100]
+  (for [i 1 100 &until (< max (length polygons))]
     (let [margin 150
+          size (love.math.random 30 120)
           next-poly (geom.polygon
-                     {:sides (love.math.random 3 12)
+                     {
                       :origin [(love.math.random margin (- w margin))
                                (love.math.random margin (- h margin))]
-                      :size (love.math.random 50 100)
+                      : size
+                      :sides (/ size 10)
                       :angle (* 2 math.pi (love.math.random))})
           collision?
           (accumulate [collision? false
