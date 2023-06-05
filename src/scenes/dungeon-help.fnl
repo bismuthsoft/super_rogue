@@ -26,7 +26,8 @@
   ["H, A, or Left" "Move left"]
   ["J, S, or Down" "Move down"]
   ["L, D, or Right" "Move right"]
-  ["Tab or ." "Wait"]
+  ["Shift + <Move>" "Move Slow"]
+  ["Tab or ." "Rest"]
   [">" "Take Stairs"]
   ["\\" "View game log "]])
 
