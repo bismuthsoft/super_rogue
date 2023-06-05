@@ -75,26 +75,17 @@ jobs:
           name: dist-linux
           path: dist
   mac:
-    if: ${{ false }}  # Broken so just skip for now.
+    if: ${{ false }}
     needs:
       - test
+      - store_dot_love
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v20
+      - uses: actions/download-artifact@v3
         with:
-          nix_path: channel:nixos-22.11
-      # cachix-action allows for caching of the built website.
-      - uses: cachix/cachix-action@v12
-        with:
-          name: bismuthsoft
-          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          name: dot_love-${{ github.sha }}
       - run: nix build .#super_rogue.dot_love
-      - run: |
-          printf 'DOT_LOVE="%s"\n' \
-              "$(nix eval --raw .#super_rogue.dot_love)/super_rogue.love" \
-              >> "$GITHUB_OUTPUT"
-        id: dot_love
       - name: Build macOS packages
         id: build-mac-packages
         uses: winny-/love-actions-macos-portable@productivityTweaks
@@ -104,18 +95,11 @@ jobs:
           copyright: "Copyright © 2023 44100hz & winny All Rights Reserved."
           icon-path: ./src/assets/super_rogue.icns
           love-ref: "fc3f5ee6209a0aab9a4d381ed5cd99110f9ff2f2"
-          love-package: ${{ steps.dot_love.outputs.DOT_LOVE }}
+          love-package: ./super_rogue.love
           # extra-assets: ./README.md ./license.txt
           product-name: "super_rogue"
           version-string: "1.0.0"
           output-folder: "./dist"
-          account-username: ${{ secrets.APPLE_ACCOUNT_USERNAME }}
-          account-password: ${{ secrets.APPLE_ACCOUNT_PASSWORD }}
-          developer-id-application-base64: ${{ secrets.APPLE_CERT_DEVELOPER_ID_APPLICATION }}
-          developer-id-application-password: ${{ secrets.APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD }}
-          team-id: "${{ secrets.APPLE_DEVELOPER_TEAM_ID }}"
-          developer-id-installer-base64: ${{ secrets.APPLE_CERT_DEVELOPER_ID_INSTALLER }}
-          developer-id-installer-password: ${{ secrets.APPLE_CERT_DEVELOPER_ID_INSTALLER_PWD }}
           dmg-background-path: ./src/assets/super_rogue.png
           dmg-icon-position: "287 313"
           dmg-icon-size: "128"
