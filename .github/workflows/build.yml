@@ -75,25 +75,17 @@ jobs:
           name: dist-linux
           path: dist
   mac:
+    if: ${{ false }}
     needs:
       - test
+      - store_dot_love
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v20
+      - uses: actions/download-artifact@v3
         with:
-          nix_path: channel:nixos-22.11
-      # cachix-action allows for caching of the built website.
-      - uses: cachix/cachix-action@v12
-        with:
-          name: bismuthsoft
-          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          name: dot_love-${{ github.sha }}
       - run: nix build .#super_rogue.dot_love
-      - run: |
-          printf 'DOT_LOVE="%s"\n' \
-              "$(nix eval --raw .#super_rogue.dot_love)/super_rogue.love" \
-              >> "$GITHUB_OUTPUT"
-        id: dot_love
       - name: Build macOS packages
         id: build-mac-packages
         uses: winny-/love-actions-macos-portable@productivityTweaks
@@ -103,7 +95,7 @@ jobs:
           copyright: "Copyright © 2023 44100hz & winny All Rights Reserved."
           icon-path: ./src/assets/super_rogue.icns
           love-ref: "fc3f5ee6209a0aab9a4d381ed5cd99110f9ff2f2"
-          love-package: ${{ steps.dot_love.outputs.DOT_LOVE }}
+          love-package: ./super_rogue.love
           # extra-assets: ./README.md ./license.txt
           product-name: "super_rogue"
           version-string: "1.0.0"
