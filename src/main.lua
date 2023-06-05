@@ -1,5 +1,7 @@
 -- bootstrap the compiler
 
+require("jit.p").start("s-88m1", "/tmp/luajit.txt")
+
 local fennel = require("lib.fennel")
 local make_love_searcher = function(env)
   return function(module_name)
