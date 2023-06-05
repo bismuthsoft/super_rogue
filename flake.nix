@@ -63,8 +63,7 @@
     '';
     # Probably better way to do this?
     test = pkgs.writeShellScriptBin "super_rogue-test" ''
-      cd ${love_src}
-      exec ${pkgs.love}/bin/love . --test --headless
+      exec ${pkgs.love}/bin/love ${dot_love}/super_rogue.love --test --headless
     '';
   in {
     packages.x86_64-linux.love_js = love_js;
