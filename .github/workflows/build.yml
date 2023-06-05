@@ -34,6 +34,139 @@ jobs:
       - run: nix build .#super_rogue.test # Separate out the noisy nix output
                                           # from running tests.
       - run: nix run .#super_rogue.test
+  desktop:
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v20
+        with:
+          nix_path: channel:nixos-22.11
+      # cachix-action allows for caching of the built website.
+      - uses: cachix/cachix-action@v12
+        with:
+          name: bismuthsoft
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+      - run: nix build .#super_rogue.dot_love
+      - run: |
+          printf 'DOT_LOVE="%s"\n' \
+              "$(nix eval --raw .#super_rogue.dot_love)/super_rogue.love" \
+              >> "$GITHUB_OUTPUT"
+        id: dot_love
+      - name: Build Linux packages
+        id: build-linux-packages
+        uses: love-actions/love-actions-linux@v1
+        with:
+          app-name: Super Rogue
+          bundle-id: top.workinprogress.super-rogue
+          description: Super Rogue
+          version-string: "1.0.0"
+          icon-path: ./src/assets/super_rogue.png
+          # icon-path: ./.github/build/linux/dev/icon.png
+          love-package: ${{ steps.dot_love.outputs.DOT_LOVE }}
+          # lib-path: ./lib
+          # share-path: ./share
+          build-deb: true
+          product-name: super-rogue
+          output-folder: ./dist
+      - uses: actions/upload-artifact@v3
+        with:
+          name: dist-linux
+          path: dist
+  mac:
+    if: ${{ false }}
+    needs:
+      - test
+      - store_dot_love
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: dot_love-${{ github.sha }}
+      - run: nix build .#super_rogue.dot_love
+      - name: Build macOS packages
+        id: build-mac-packages
+        uses: winny-/love-actions-macos-portable@productivityTweaks
+        with:
+          app-name: "Super Rogue"
+          bundle-id: "top.workinprogress.super_rogue"
+          copyright: "Copyright © 2023 44100hz & winny All Rights Reserved."
+          icon-path: ./src/assets/super_rogue.icns
+          love-ref: "fc3f5ee6209a0aab9a4d381ed5cd99110f9ff2f2"
+          love-package: ./super_rogue.love
+          # extra-assets: ./README.md ./license.txt
+          product-name: "super_rogue"
+          version-string: "1.0.0"
+          output-folder: "./dist"
+          dmg-background-path: ./src/assets/super_rogue.png
+          dmg-icon-position: "287 313"
+          dmg-icon-size: "128"
+          dmg-link-position: "734 313"
+          dmg-text-size: "12"
+          # dmg-volume-icon-path: ./assets/macOS/dmg.icns
+          dmg-volume-name: "super_rogue"
+          dmg-window-position: "200 120"
+          dmg-window-size: "1024 604"
+      - uses: actions/upload-artifact@v3
+        with:
+          name: dist-mac
+          path: dist
+
+  store_dot_love:
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v20
+        with:
+          nix_path: channel:nixos-22.11
+      # cachix-action allows for caching of the built website.
+      - uses: cachix/cachix-action@v12
+        with:
+          name: bismuthsoft
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+      - run: nix build .#super_rogue.dot_love
+      - run: |
+          printf 'DOT_LOVE=%s\n' \
+              "$(nix eval --raw .#super_rogue.dot_love)/super_rogue.love" \
+              >> "$GITHUB_OUTPUT"
+        id: dot_love
+      - uses: actions/upload-artifact@v3
+        with:
+          name: dot_love-${{ github.sha }}
+          path: ${{ steps.dot_love.outputs.DOT_LOVE }}
+          if-no-files-found: error
+
+  windows:
+    needs:
+      - test
+      - store_dot_love
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: dot_love-${{ github.sha }}
+      - name: Build Windows packages
+        id: build-windows
+        uses: love-actions/love-actions-windows@v1
+        with:
+          love-package: ./super_rogue.love
+          icon-path: ./src/assets/super_rogue.ico
+          # rc-path: ./assets/template.rc
+          product-name: super_rogue
+          app-id: ${{ secrets.APP_ID }}
+          product-website: https://super-rogue.workinprogress.top
+          installer-languages: English.isl
+          output-folder: "./dist"
+      - uses: actions/upload-artifact@v3
+        with:
+          name: dist-windows
+          path: dist
+
   website:
     permissions:
       pull-requests: write
