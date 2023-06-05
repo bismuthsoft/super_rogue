@@ -75,7 +75,6 @@ jobs:
           name: dist-linux
           path: dist
   mac:
-    if: ${{ false }}  # Broken so just skip for now.
     needs:
       - test
     runs-on: macos-latest
@@ -109,13 +108,6 @@ jobs:
           product-name: "super_rogue"
           version-string: "1.0.0"
           output-folder: "./dist"
-          account-username: ${{ secrets.APPLE_ACCOUNT_USERNAME }}
-          account-password: ${{ secrets.APPLE_ACCOUNT_PASSWORD }}
-          developer-id-application-base64: ${{ secrets.APPLE_CERT_DEVELOPER_ID_APPLICATION }}
-          developer-id-application-password: ${{ secrets.APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD }}
-          team-id: "${{ secrets.APPLE_DEVELOPER_TEAM_ID }}"
-          developer-id-installer-base64: ${{ secrets.APPLE_CERT_DEVELOPER_ID_INSTALLER }}
-          developer-id-installer-password: ${{ secrets.APPLE_CERT_DEVELOPER_ID_INSTALLER_PWD }}
           dmg-background-path: ./src/assets/super_rogue.png
           dmg-icon-position: "287 313"
           dmg-icon-size: "128"
