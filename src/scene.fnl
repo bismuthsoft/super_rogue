@@ -5,6 +5,7 @@
 (var fns {})
 (var state nil)
 (var transform (love.math.newTransform))
+(local min-framerate 30)
 
 (fn scene.get-mouse-position [x y]
   (transform:inverseTransformPoint
@@ -36,13 +37,14 @@
              (match (. fns name)
                (where callback) (callback state x y ...))))))
 
-  (bind-love :update)
-  (bind-love :draw)
   (bind-love :keypressed)
   (bind-love :keyreleased)
   (bind-love-mouse :mousemoved)
   (bind-love-mouse :mousepressed)
   (bind-love-mouse :mousereleased)
+
+  (fn love.update [dt]
+    (fns.update state (math.min dt (/ 1 min-framerate))))
 
   (fn love.draw []
     ;; center the screen and preserve aspect
