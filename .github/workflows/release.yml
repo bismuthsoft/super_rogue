@@ -170,3 +170,14 @@ jobs:
         with:
           name: dist-linux
       - run: 'find .'
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        # if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            super_rogue_x86.zip
+            super_rogue_x64.zip
+            super_rogue.love
+            super-rogue.deb
+            super-rogue.AppImage
+            super_rogue_installer.exe
