@@ -681,7 +681,9 @@
         (set actor.angle (+ actor.angle (* dt actor.rotate-speed))))
       :bullet
       (do
-        (dungeon.actor-step-forward actor dt)))))
+        (dungeon.actor-step-forward actor dt)
+        (when (not (geom.point-in-polygon? actor.pos s.level-border))
+          (dungeon.delete-actor s actor))))))
 
 (fn dungeon.draw-actors [s]
   (each [i actor (ipairs s.actors)]
