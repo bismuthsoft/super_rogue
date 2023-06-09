@@ -1,6 +1,5 @@
 name: Release
 on:
-  push:
   # workflow_run:
   #   workflows:
   #     - Build
@@ -8,9 +7,9 @@ on:
   #     - master
   #   types:
   #     - completed
-  # push:
-  #   tags:
-  #     - "v*.*.*"
+  push:
+    tags:
+      - "v*.*.*"
 permissions:
   contents: write
 jobs:
@@ -169,15 +168,19 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: dist-linux
-      - run: 'find .'
+      - run: |
+          mv super_rogue_x86.zip super_rogue_windows_x86.zip
+          mv super_rogue_x64.zip super_rogue_windows_x64.zip
       - name: Release
         uses: softprops/action-gh-release@v1
         # if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            super_rogue_x86.zip
-            super_rogue_x64.zip
             super_rogue.love
+
+            super_rogue_windows_x86.zip
+            super_rogue.windows_x64.zip
+            super_rogue_installer.exe
+
             super-rogue.deb
             super-rogue.AppImage
-            super_rogue_installer.exe
