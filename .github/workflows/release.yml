@@ -1,8 +1,9 @@
 name: Release
 on:
-  workflow_run:
-    workflows:
-      - Build
+  push:
+  # workflow_run:
+  #   workflows:
+  #     - Build
   #   branches:
   #     - master
   #   types:
