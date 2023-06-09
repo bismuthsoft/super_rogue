@@ -49,7 +49,7 @@ jobs:
         with:
           name: bismuthsoft
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-      - run: nix-build
+      - run: nix build
       - run: |
           env | grep -o "^AWS_[^=]*"
           echo $AWS_ACCESS_KEY_ID | wc -c
