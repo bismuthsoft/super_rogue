@@ -179,7 +179,7 @@ jobs:
             super_rogue.love
 
             super_rogue_windows_x86.zip
-            super_rogue.windows_x64.zip
+            super_rogue_windows_x64.zip
             super_rogue_installer.exe
 
             super-rogue.deb
