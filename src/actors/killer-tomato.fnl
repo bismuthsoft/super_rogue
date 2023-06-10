@@ -1,4 +1,4 @@
-(local dungeon (include :scenes.dungeon))
+(local dungeon (require :scenes.dungeon))
 (local kt {})
 
 (fn kt.spawn [s pos ?generation ...]
