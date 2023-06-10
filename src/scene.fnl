@@ -1,4 +1,5 @@
 (import-macros {: vec2-op} :geom-macros)
+(local fennel (require :lib.fennel))
 (local lume (require :lib.lume))
 
 (local scene {})
@@ -70,6 +71,8 @@
       (love.window.setFullscreen (not (love.window.getFullscreen)))
       true)
     (where (or :lalt :ralt))
-    true))
+    true
+    :f12
+    (error "Testing error handling...")))
 
 scene
