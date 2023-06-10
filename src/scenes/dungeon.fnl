@@ -396,17 +396,20 @@
 (fn dungeon.draw-actor [s actor ?last-seen-at]
   (local [x y] (or ?last-seen-at actor.pos))
 
-  (case (?. actor :hitbox :shape)
-    :circle
-    (do
-      (love.graphics.setColor (if (. s.hurt-tallies actor)
-                                  [1 0 0 1]
-                                  [1 1 1 0.2]))
-      (love.graphics.setLineWidth 2)
-      (love.graphics.circle :line x y (- actor.hitbox.size 1)))
-    :line
-    (do
-      (draw.ray [x y] [actor.angle actor.hitbox.size] 1 [1 1 1 0.2])))
+  (when actor.hitbox
+    (match actor.hitbox.shape
+      :circle
+      (do
+        (love.graphics.setColor (if (. s.hurt-tallies actor)
+                                    [1 0 0 1]
+                                    [1 1 1 0.2]))
+        (love.graphics.setLineWidth 2)
+        (love.graphics.circle :line x y (- actor.hitbox.size 1)))
+      :line
+      (do
+        (draw.ray [x y] [actor.angle actor.hitbox.size] 1 [1 1 1 0.2]))
+      (where other)
+      (error (.. "Unknown hitbox shape: " other))))
 
   (when (and actor.hp (not actor.hide-hp?) (not (>= actor.hp actor.max-hp)))
     (draw.progress [[(vec2-op - [x y] [10 15])] [20 5]]
