@@ -2,74 +2,72 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="210mm"
-   height="297mm"
-   viewBox="0 0 210 297"
+   width="256"
+   height="256"
+   viewBox="0 0 67.733332 67.733333"
    version="1.1"
    id="svg5"
-   inkscape:version="1.2.1 (9c6d41e410, 2022-07-14)"
-   sodipodi:docname="super_rogue.svg"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
-  <sodipodi:namedview
-     id="namedview7"
-     pagecolor="#505050"
-     bordercolor="#ffffff"
-     borderopacity="1"
-     inkscape:showpageshadow="0"
-     inkscape:pageopacity="0"
-     inkscape:pagecheckerboard="1"
-     inkscape:deskcolor="#505050"
-     inkscape:document-units="mm"
-     showgrid="false"
-     inkscape:zoom="0.60313287"
-     inkscape:cx="46.424265"
-     inkscape:cy="741.13023"
-     inkscape:window-width="1920"
-     inkscape:window-height="1007"
-     inkscape:window-x="0"
-     inkscape:window-y="0"
-     inkscape:window-maximized="1"
-     inkscape:current-layer="layer1" />
   <defs
-     id="defs2">
-    <rect
-       x="185.69706"
-       y="391.29023"
-       width="437.7145"
-       height="306.73175"
-       id="rect236" />
-  </defs>
+     id="defs2" />
+  <rect
+     style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:0.325981;paint-order:stroke fill markers"
+     id="rect1482"
+     width="67.73333"
+     height="67.73333"
+     x="0"
+     y="0"
+     ry="7.0083389" />
   <g
-     inkscape:label="Layer 1"
-     inkscape:groupmode="layer"
      id="layer1">
-    <rect
-       style="fill:#333333;stroke:#333333;stroke-width:1.34032;stroke-opacity:1"
-       id="rect342"
-       width="79.767365"
-       height="79.767365"
-       x="67.593323"
-       y="95.230263" />
-    <text
-       xml:space="preserve"
-       transform="matrix(0.26458333,0,0,0.26458333,-0.35517137,0.52833318)"
-       id="text234"
-       style="font-style:normal;font-weight:normal;font-size:40px;line-height:0.8;font-family:sans-serif;white-space:pre;shape-inside:url(#rect236);fill:#000000;fill-opacity:1;stroke:none"
-       x="102"
-       y="0"><tspan
-         x="299.55469"
-         y="477.69102"
-         id="tspan1395"><tspan
-           style="font-size:96px;font-family:ProggyCleanTT;-inkscape-font-specification:'ProggyCleanTT, Normal';text-align:center;text-anchor:middle;fill:#b3b3b3"
-           id="tspan1393">Super
-</tspan></tspan><tspan
-         x="299.55469"
-         y="569.64905"
-         id="tspan1399"><tspan
-           style="font-size:96px;font-family:ProggyCleanTT;-inkscape-font-specification:'ProggyCleanTT, Normal';text-align:center;text-anchor:middle;fill:#b3b3b3"
-           id="tspan1397">Rogue</tspan></tspan></text>
+    <g
+       id="g1750"
+       transform="translate(-25.011549,-12.049363)">
+      <circle
+         style="fill:none;stroke:#ffffff;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:0.325981;paint-order:stroke fill markers"
+         id="path1112"
+         cx="44.010735"
+         cy="46.646294"
+         r="14.605289" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:52.0527px;line-height:1.25;font-family:'Courier Prime';-inkscape-font-specification:'Courier Prime';letter-spacing:0px;word-spacing:0px;fill:#ffffff;stroke-width:0.325329"
+         x="28.518715"
+         y="58.334679"
+         id="text238"><tspan
+           id="tspan236"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:52.0527px;font-family:'Courier Prime';-inkscape-font-specification:'Courier Prime';fill:#ffffff;stroke-width:0.325329"
+           x="28.518715"
+           y="58.334679">@</tspan></text>
+    </g>
+    <path
+       style="fill:none;stroke:#ff0000;stroke-width:4;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+       d="M 27.943608,16.079672 31.679697,3.5961453"
+       id="path1058" />
+    <path
+       style="fill:none;stroke:#ffffff;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+       d="M -11.722121,45.620853 50.898054,64.060025 45.48743,32.583545 62.108502,34.947992 72.988543,18.966202"
+       id="path1693" />
+    <g
+       id="g1758"
+       transform="translate(4.0164531,-35.60039)">
+      <circle
+         style="fill:none;stroke:#ffffff;stroke-width:3.73621;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:0.35647;paint-order:stroke fill markers"
+         id="circle1752"
+         cx="47.479488"
+         cy="52.12328"
+         r="10.480946" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:23.0035px;line-height:1.25;font-family:'Courier Prime';-inkscape-font-specification:'Courier Prime Bold';letter-spacing:0px;word-spacing:0px;fill:#00ff00;stroke-width:0.143771"
+         x="40.666782"
+         y="59.114769"
+         id="text1756"><tspan
+           id="tspan1754"
+           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:23.0035px;font-family:'Courier Prime';-inkscape-font-specification:'Courier Prime Bold';fill:#00ff00;stroke-width:0.143771"
+           x="40.666782"
+           y="59.114769">l</tspan></text>
+    </g>
   </g>
 </svg>
