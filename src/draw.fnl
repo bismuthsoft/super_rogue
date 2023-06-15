@@ -18,6 +18,21 @@
        (love.graphics.setCanvas)
        out#)))
 
+(fn draw.get-centered-viewport-transform [x1 y1 x2 y2]
+  (let [transform (love.math.newTransform)
+        screensize [(love.window.getMode)]
+        (vw vh) (vec2-op - [x2 y2] [x1 y1])
+        (scalex scaley) (vec2-op / screensize [vw vh])
+        scale (math.min scalex scaley)
+        realsize [(vec2-op * [scale scale] [vw vh])]
+        (ox oy) (vec2-op /           ; offset to center it
+                         [(vec2-op - screensize realsize)]
+                         [2 2])]
+    (transform:translate ox oy)
+    (transform:scale scale)
+    (transform:translate (- x1) (- y1))
+    transform))
+
 (fn draw.progress [[[x y] [w h]] percent color]
   (with-graphics-context
     (love.graphics.setColor color)

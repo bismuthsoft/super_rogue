@@ -1,5 +1,6 @@
 (import-macros {: vec2-op} :geom-macros)
 (local lume (require :lib.lume))
+(local draw (require :draw))
 
 (local scene {})
 (var fns {})
@@ -49,21 +50,13 @@
   (fn love.draw []
     ;; center the screen and preserve aspect. The viewport function on each
     ;; scene gives the upper left and lower right corner of the current scene.
-    (let [screensize [(love.window.getMode)]
-          (vx1 vy1 vx2 vy2) (fns.viewport state)
-          (vw vh) (vec2-op - [vx2 vy2] [vx1 vy1])
-          (scalex scaley) (vec2-op / screensize [vw vh])
-          scale (math.min scalex scaley)
-          realsize [(vec2-op * [scale scale] [vw vh])]
-          (ox oy) (vec2-op /           ; offset to center it
-                           [(vec2-op - screensize realsize)]
-                           [2 2])]
-      (transform:reset)
-      (transform:translate ox oy)
-      (transform:scale scale)
-      (transform:translate (- vx1) (- vy1)))
+    (love.graphics.push)
+    (set transform (draw.get-centered-viewport-transform (fns.viewport state)))
     (love.graphics.applyTransform transform)
-    (fns.draw state)))
+    (fns.draw state)
+    (love.graphics.pop)
+    (when fns.draw-no-transform
+      (fns.draw-no-transform state))))
 
 (set scene.global-keys {})
 

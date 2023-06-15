@@ -94,7 +94,12 @@
   (love.graphics.setColor 1 1 1 0.7)
   (love.graphics.setLineWidth 2)
   (vision.draw-visible-border s.level-border s.border-seen)
-  (dungeon.draw-actors s)
+  (dungeon.draw-actors s))
+
+(fn dungeon.draw-no-transform [s]
+  (love.graphics.push)
+  (local transform (draw.get-centered-viewport-transform 0 0 800 600))
+  (love.graphics.applyTransform transform)
   (love.graphics.setColor [1 1 1 1])
   (love.graphics.print (lume.format "Level: {level} // Time: {time}"
                                     {:time (lume.round s.elapsed-time .001) :level s.level})
@@ -102,7 +107,9 @@
   (love.graphics.setColor [.5 .5 .5 1])
   (love.graphics.print "Press F1, /, or ? for help" 500 10)
   (when (> (length s.log) 0)
-    (love.graphics.print (lume.last s.log) 265 560)))
+    (love.graphics.print (lume.last s.log) 265 560))
+  (dungeon.draw-player-meters s)
+  (love.graphics.pop))
 
 (fn dungeon.mousemoved [s x y]
   (s.player.mousemoved s s.player x y))
@@ -421,15 +428,6 @@
     (local s (or actor.char-scale 1))
     (love.graphics.printf actor.char x y 51 :center 0 s s 25 11))
 
-  (when actor.meters
-    (each [_ meter (pairs actor.meters)]
-      (let [value (. actor meter.value-field)
-            max (. actor meter.max-field)
-            pos (if (= meter.pos :follow)
-                    [(vec2-op + [x y] [0 -10])]
-                    meter.pos)]
-        (draw.progress [pos meter.size] (/ value max) meter.color))))
-
   (match actor.show-line
     (where {: color : len &as line})
     (draw.ray [x y] [actor.angle len] (or line.thickness 1) color)
@@ -440,6 +438,24 @@
 
   (when actor.draw
     (actor.draw s actor)))
+
+(fn dungeon.draw-player-meters [s]
+  (local meters [{:size [100 20]
+                  :value s.player.hp
+                  :max s.player.max-hp
+                  :color [.9 0 0 1]
+                  :xoff 20
+                  :yoff 40}
+                 {:size [100 20]
+                  :value s.player.stamina
+                  :max s.player.stamina
+                  :color [0 .7 0 1]
+                  :xoff 140
+                  :yoff 40}])
+  (each [_ {: size : value : max : color : xoff : yoff} (ipairs meters)]
+   (local filled (/ value max))
+   (local pos [(+ 0 xoff) (- 600 yoff)])
+   (draw.progress [pos size] filled color)))
 
 (fn dungeon.log [s msg]
   (table.insert s.log msg))

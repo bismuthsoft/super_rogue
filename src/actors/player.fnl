@@ -39,20 +39,7 @@
    :freeze-until 0
    :hitbox {:size 8 :shape :circle}
    :show-line {:color [1 1 1 0.3]
-               :len 100}
-   :meters {:health
-            {:pos [20 560]
-             :size [100 20]
-             :value-field :hp
-             :max-field :max-hp
-             :color [.9 0 0 1]}
-            :stamina
-            {:pos [140 560]
-             :size [100 20]
-             :follow false
-             :value-field :stamina
-             :max-field :max-stamina
-             :color [0 .7 0 1]}}})
+               :len 100}})
 
 (fn player.update [s actor dt]
   (set actor.stamina
