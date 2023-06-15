@@ -27,15 +27,13 @@
 (fn dungeon.next-level [s]
   (set s.level (+ s.level 1))
   (set s.actors [])
-  (table.insert s.log
-                (lume.format "Welcome to dungeon level {level}" s))
+  (dungeon.log s (lume.format "Welcome to dungeon level {level}" s))
   (set s.actors-to-spawn [])
   (set s.hurt-tallies {}) ; map of <actor,tally> to combine hp of hits
   (set s.hurt-timers {})  ; map of <actor,timestamp> to combine hp of hits
   (set s.will-delete {})  ; map of <actor,will-delete?> to delete actors
   (set s.actors-seen {})  ; map of <actor,place> where have been seen last
   (set s.time-til-game-over nil)
-  (set s.freeze-player-until -100000)
   (let [(polygon actors) (mapgen.generate-level s.level (dungeon.size s))]
     (set s.level-border polygon)
     (each [_ args (ipairs actors)]
@@ -74,12 +72,12 @@
         (tset s.hurt-tallies actor nil))))
 
   (if
-   (or (> s.freeze-player-until s.elapsed-time) s.time-til-game-over)
+   (or (> s.player.freeze-until s.elapsed-time) s.time-til-game-over)
    (do                                  ; realtime mode
       (set s.elapsed-time (+ dt s.elapsed-time))
       (dungeon.update-actors s dt))
    (do                                  ; normal (freezy) mode
-    (dungeon.update-player s dt)
+      (dungeon.update-realtime-actors s dt)
     ;; add new actors
     (when (> s.delta-time 0)
       (set s.elapsed-time (+ s.delta-time s.elapsed-time))
@@ -107,25 +105,19 @@
     (love.graphics.print (lume.last s.log) 265 560)))
 
 (fn dungeon.mousemoved [s x y]
-  (set s.player.angle (geom.angle (vec2-op - [x y] s.player.pos))))
+  (s.player.mousemoved s s.player x y))
 
 (fn dungeon.keypressed [s keycode scancode]
   (when (scene.global-keys.handle-keypressed keycode scancode)
     (lua "return"))
+
+  (s.player.keypressed s s.player scancode)
 
   (match scancode
     (where (or :/ :? :f1))
     (scene.set :dungeon-help s)
     "\\"
     (scene.set :dungeon-messages s)
-    (where "." (util.shift-down?))
-    (do
-      (local distance (geom.distance (vec2-op - s.player.pos s.stairs-down.pos)))
-      (when (< distance 20) (dungeon.next-level s)))
-    (where (or "." :tab))
-    (set s.freeze-player-until (+ s.elapsed-time 0.5))
-    :space
-    (dungeon.swing-player-sword s)
     ;; DEBUG
     :f5
     (do
@@ -148,52 +140,7 @@
             (print (.. "ERROR: failed to reload vision. " err)))))))
 
 (fn dungeon.mousepressed [s x y button]
-  (match button
-   1
-     (dungeon.fire-player-bullet s)
-   2
-     (dungeon.swing-player-sword s)))
-
-(fn dungeon.move-player-to [s newpos]
-  (set s.delta-time (+ s.delta-time
-                       (/ (geom.distance (vec2-op - newpos s.player.pos))
-                          s.player.speed)))
-  (set s.player.stamina (- s.player.stamina (* s.player.movement-cost
-                                               s.delta-time)))
-  (dungeon.actor-look-at-pos s.player (scene.get-mouse-position))
-  (vision.update-visible s.border-seen s.player.pos s.level-border)
-  (set s.player.pos newpos))
-
-(fn dungeon.freeze-player [s duration]
-  (set s.freeze-player-until (+ s.elapsed-time duration)))
-
-(fn dungeon.fire-player-bullet [s]
-  (dungeon.actor-try-stamina-action
-   s.player
-   s.player.bullet-stamina-cost
-   (lambda []
-     (dungeon.spawn-actor s
-                          :bullet
-                          s.player.pos
-                          s.player.angle
-                          true
-                          s.player.bullet-atk
-                          {}))))
-
-(fn dungeon.swing-player-sword [s]
-  (dungeon.actor-try-stamina-action
-   s.player
-   s.player.melee-stamina-cost
-   (lambda []
-     (dungeon.freeze-player s 0.2)
-     (dungeon.spawn-actor
-      s
-      :sword
-      s.player.pos
-      s.player.angle
-      true
-      s.player.melee-atk
-      {:duration 0.2}))))
+  (s.player.mousepressed s s.player x y button))
 
 ;;; returns true if step was successful
 (fn dungeon.actor-step-forward [actor dt ?level-border]
@@ -294,193 +241,24 @@
                             :char-scale 0.5}))))
 
 (fn dungeon.spawn-actor [s kind ...]
-  (dungeon.insert-actor s
-   (case kind
-     :player
-     (let [pos ...]
-       {: kind
-        :name "player"
-        : pos
-        :friendly? true
-        :always-visible? true
-        :vision? true
-        :color [1 1 1]
-        :char "@"
-        :char-scale 1.3
-        :angle 0
-        :speed 90
-        :hp 3
-        :max-hp 4
-        :hide-hp? true
-        :stamina 5
-        :max-stamina 10
-        :stamina-regen-rate 5
-        :bullet-stamina-cost 6
-        :bullet-atk 80
-        :melee-stamina-cost 3
-        :melee-atk 20
-        :movement-cost 2
-        :hitbox {:size 8 :shape :circle}
-        :show-line {:color [1 1 1 0.3]
-                    :len 100}
-        :meters {:health
-                 {:pos [20 560]
-                  :size [100 20]
-                  :value-field :hp
-                  :max-field :max-hp
-                  :color [.9 0 0 1]}
-                 :stamina
-                 {:pos [140 560]
-                  :size [100 20]
-                  :follow false
-                  :value-field :stamina
-                  :max-field :max-stamina
-                  :color [0 .7 0 1]}}})
-     :bullet
-     (let [(pos angle friendly? atk props) ...
-           color (or props.color [1 0 0 1])
-           speed (or props.speed 300)
-           name (or props.name "bullet")]
-       {: kind
-        : name
-        : friendly?
-        :enemy? (not friendly?)
-        : pos
-        : angle
-        : color
-        :hitbox {:shape :line :size 6}
-        :show-line {: color :len 6 :thickness 2}
-        :expiry props.expiry
-        : atk
-        : speed})
-     :sword
-     (let [(pos angle friendly? atk props) ...
-           arc-len (or props.arc-len (/ math.pi 4))
-           duration (or props.duration 0.2)
-           angle (- angle (/ arc-len 2))
-           len (or props.len 30)
-           rotate-speed (/ arc-len duration)
-           expiry (+ s.elapsed-time duration)]
-       {: kind
-        :name "sword"
-        : pos
-        : angle
-        : friendly?
-        : atk
-        :enemy? (not friendly?)
-        :hitbox {:shape :line :size len}
-        :color [1 0 0 1]
-        :always-visible? true
-        : rotate-speed
-        : expiry})
-     :leprechaun
-     (let [(pos) ...]
-       {: kind
-        :name "Leprechaun"
-        : pos
-        :enemy? true
-        :color [.2 1 .2 1]
-        :char "l"
-        :hp 5
-        :max-hp 5
-        :atk 5
-        :hitbox {:size 8 :shape :circle}
-        :speed 30
-        :angle 0
-        :target-timer s.elapsed-time
-        :bullet-timer nil})
-     :killer-tomato
-     (let [(pos ?generation) ...]
-       {: kind
-        :name "killer tomato"
-        : pos
-        :enemy? true
-        :color [1 0 0]
-        :char "t"
-        :hp 3
-        :max-hp 3
-        :atk 6
-        :hitbox {:size 8 :shape :circle}
-        :generation (or ?generation 1)
-        :seed-timer nil
-        :seed-count 0})
-     :tomato-seed
-     (let [(pos generation) ...
-           seed {: kind
-                 :name "tomato seed"
-                 : pos
-                 :char "•"
-                 :color [0 1 0]
-                 :expiry (+ s.elapsed-time (+ 1 (math.random)))
-                 :on-expiry (fn [s actor]
-                              (table.insert s.log "The tomato seed has grown into a killer tomato!")
-                              (dungeon.spawn-actor s
-                                                   :killer-tomato
-                                                   actor.pos
-                                                   generation))
-                 :speed 25}]
-       (dungeon.actor-look-at-pos seed (unpack s.player.pos))
-       (set (seed.angle) (+ seed.angle (math.random) -0.5))
-       (dungeon.actor-step-forward seed (+ 1 (math.random)) s.level-border)
-       seed)
-     :grid-bug
-     (let [pos ...]
-       {: kind
-        :name "Gridbug"
-        : pos
-        :enemy? true
-        :color [(lume.color "#811A74")]
-        :char "x"
-        :char-scale 0.8
-        :hp 1
-        :max-hp 1
-        :atk 2
-        :speed 50
-        :angle 0
-        :ai {:kind :random}
-        :hitbox {:size 4 :shape :circle}})
-     :gold-coin
-     (let [pos ...]
-       {: kind
-        :name "gold coin"
-        : pos
-        :color [1 0.8 0 1]
-        :char "$"
-        :char-scale 1
-        :hitbox {:size 5 :shape :circle}
-        :collect {:money 1}})
-     :tomato
-     (let [pos ...]
-       {: kind
-        :name "tomato"
-        : pos
-        :color [1 0 0]
-        :char "ó"
-        :hitbox {:size 5 :shape :circle}
-        :collect {:hp 1}})
-     :stairs-down
-     (let [pos ...]
-       {: kind
-        :name "downward staircase"
-        : pos
-        :color [1 0.7 0 1]
-        :char ">"
-        :hitbox {:size 8 :shape :circle}})
-     :particle
-     (let [(pos angle props) ...]
-       {: kind
-        :name "particle"
-        : angle
-        : pos
-        :always-visible? true
-        :color props.color
-        :char props.char
-        :char-scale props.char-scale
-        :show-line props.show-line
-        :expiry (+ s.elapsed-time props.lifetime)
-        :speed props.speed})
-     _
-     (error (.. "Unknown Actor kind: " kind)))))
+  (local actor-class (require (.. "actors." kind)))
+  (local actor (actor-class.spawn s ...))
+  (match kind
+   :player
+   (if s.player
+       (do
+         (set s.player.pos actor.pos)
+         (table.insert s.actors-to-spawn s.player)
+         (lua "return"))
+       (do
+         (set s.player actor)))
+   :stairs-down
+   (set s.stairs-down actor))
+
+  (dungeon.insert-actor s actor))
+
+(fn dungeon.insert-actor [s actor]
+  (table.insert s.actors-to-spawn actor))
 
 (fn dungeon.collide-actors [s actor other dt]
   (when (not (collide.actors-collide? actor other))
@@ -547,33 +325,24 @@
         :player
         (do
           (set s.time-til-game-over (+ s.elapsed-time 2))
-          (set s.msg "You died!"))
-        :killer-tomato
-        (when (< (love.math.random) 0.2)
-            (dungeon.spawn-actor s :tomato actor.pos)
-            (set msg (.. "The Killer Tomato became docile!"))))
+          (set s.msg "You died!")))
       (dungeon.delete-actor s actor)))
   (when msg
-    (table.insert s.log msg))
+    (dungeon.log s msg))
   nil)
 
-(fn dungeon.insert-actor [s {: kind &as props}]
-  (if
-   (= kind :player) (if s.player
-                        (do
-                          (set s.player.pos props.pos)
-                          (table.insert s.actors-to-spawn s.player)
-                          (lua "return"))
-                        (set s.player props))
-   (= kind :stairs-down) (set s.stairs-down props))
-  (table.insert s.actors-to-spawn props)
-  props)
-
 (fn dungeon.delete-actor [s actor]
+  (match actor.on-death
+    (where callback) (callback s actor))
   (tset s.will-delete actor true))
 
+(fn dungeon.update-realtime-actors [s dt]
+  (each [i actor (ipairs s.actors)]
+    (match actor.realtime-update
+      (where update) (update s actor dt))))
+
 (fn dungeon.update-actors [s dt]
-  (each [i {: kind &as actor} (ipairs s.actors)]
+  (each [i actor (ipairs s.actors)]
     ;; hitboxes
     (when actor.hitbox
       (each [_ other (ipairs s.actors)]
@@ -583,15 +352,19 @@
           (dungeon.collide-actors s actor other dt))))
 
     ;; automatic death
-    (when (and actor.expiry
-               (< actor.expiry s.elapsed-time))
-      (when actor.on-expiry (actor.on-expiry s actor))
-      (dungeon.delete-actor s actor))
+    (when actor.lifetime
+      (set actor.lifetime (- actor.lifetime dt))
+      (if (<= actor.lifetime 0)
+        (dungeon.delete-actor s actor)))
+
+    ;; moving forward
+    (when actor.moving?
+      (local did-move? (dungeon.actor-step-forward actor dt)))
 
     ;; ai
     (local ai actor.ai)
     (case (?. ai :kind)
-      :random
+      :random ; move to a random point, periodically
       (do
         (let [did-step (dungeon.actor-step-forward actor dt s.level-border)]
           (when (or (not did-step)
@@ -601,89 +374,8 @@
             (set ai.next-target-time (+ s.elapsed-time (love.math.random)))
             (dungeon.actor-look-at-pos actor (unpack ai.target))))))
 
-    ;; dedicated update code
-    (case kind
-      :player
-      (do
-        (set s.player.stamina
-             (math.min
-              s.player.max-stamina
-              (+ s.player.stamina (* dt s.player.stamina-regen-rate)))))
-      :killer-tomato
-      (do
-        (if (and (< actor.generation 3)
-                 (< actor.hp actor.max-hp)
-                 (< actor.seed-count 3))
-            (if
-             (not actor.seed-timer)
-             (do
-               (set actor.seed-timer (+ s.elapsed-time
-                                        (/ (math.random 50 100) 128))))
-             (< actor.seed-timer s.elapsed-time)
-             (do
-               (set actor.seed-timer nil)
-               (set actor.seed-count (+ 1 actor.seed-count))
-               (table.insert s.log "The killer tomato has propagated a tomato seed...")
-               (dungeon.spawn-actor s :tomato-seed actor.pos (+ 1 actor.generation))))))
-      :leprechaun
-      (do
-        (if
-         (not actor.bullet-timer)
-         (set actor.bullet-timer
-              (+ s.elapsed-time
-               (/ (math.random 50 100) 64)))
-         (< actor.bullet-timer s.elapsed-time)
-         (do
-           (set actor.bullet-timer nil)
-           (when (vision.see-between-points? actor.pos s.player.pos s.level-border)
-                 (dungeon.spawn-actor s
-                                      :bullet
-                                      actor.pos
-                                      (geom.angle (vec2-op - s.player.pos actor.pos))
-                                      false
-                                      10
-                                      {:speed 100
-                                       :color [0.8 0.8 0.5 1]
-                                       :name "Leprechaun Dagger"
-                                       :expiry (+ s.elapsed-time 2)}))))
-        (if
-         (not actor.target-timer)
-         (do
-           (set actor.target-timer (+ s.elapsed-time
-                                      (/ (math.random 40 80) 64))))
-         (< actor.target-timer s.elapsed-time)
-         (do
-           (set actor.target-timer nil)
-           (let [coin
-                 (dungeon.find-nearest-visible s actor :gold-coin)
-                 stairs
-                 (dungeon.find-nearest-visible s actor :stairs-down)
-                 behind-player
-                 [(vec2-op +
-                           s.player.pos
-                           [(geom.polar->rectangular s.player.angle -300)])]]
-             (set actor.speed (if (or coin stairs) 50 85))
-             (dungeon.actor-look-at-pos actor (unpack
-                                               (if
-                                                stairs stairs.pos
-                                                coin coin.pos
-                                                behind-player)))
-             (set actor.angle (+ actor.angle (* 0.4 (math.random))))))
-         (do
-           (when (not (dungeon.actor-step-forward actor dt s.level-border))
-             (set actor.target-timer s.elapsed-time)))))
-
-      :particle
-      (do
-        (dungeon.actor-step-forward actor dt))
-      :sword
-      (do
-        (set actor.angle (+ actor.angle (* dt actor.rotate-speed))))
-      :bullet
-      (do
-        (dungeon.actor-step-forward actor dt)
-        (when (not (geom.point-in-polygon? actor.pos s.level-border))
-          (dungeon.delete-actor s actor))))))
+    (match actor.update
+      (where update) (update s actor dt))))
 
 (fn dungeon.draw-actors [s]
   (each [i actor (ipairs s.actors)]
@@ -701,27 +393,34 @@
        (dungeon.draw-actor s actor (. s.actors-seen actor))
        (love.graphics.setColorMask true true true true)))))
 
-(fn dungeon.draw-actor [s {: kind &as actor} ?last-seen-at]
+(fn dungeon.draw-actor [s actor ?last-seen-at]
   (local [x y] (or ?last-seen-at actor.pos))
-  (case (?. actor :hitbox :shape)
-    :circle
-    (do
-      (love.graphics.setColor (if (. s.hurt-tallies actor)
-                                  [1 0 0 1]
-                                  [1 1 1 0.2]))
-      (love.graphics.setLineWidth 2)
-      (love.graphics.circle :line x y (- actor.hitbox.size 1)))
-    :line
-    (do
-      (draw.ray [x y] [actor.angle actor.hitbox.size] 1 [1 1 1 0.2])))
+
+  (when actor.hitbox
+    (match actor.hitbox.shape
+      :circle
+      (do
+        (love.graphics.setColor (if (. s.hurt-tallies actor)
+                                    [1 0 0 1]
+                                    [1 1 1 0.2]))
+        (love.graphics.setLineWidth 2)
+        (love.graphics.circle :line x y (- actor.hitbox.size 1)))
+      :line
+      (do
+        (draw.ray [x y] [actor.angle actor.hitbox.size] 1 [1 1 1 0.2]))
+      (where other)
+      (error (.. "Unknown hitbox shape: " other))))
+
   (when (and actor.hp (not actor.hide-hp?) (not (>= actor.hp actor.max-hp)))
     (draw.progress [[(vec2-op - [x y] [10 15])] [20 5]]
                    (/ actor.hp actor.max-hp)
                    [1 0 0 1]))
+
   (when actor.char
     (love.graphics.setColor actor.color)
     (local s (or actor.char-scale 1))
     (love.graphics.printf actor.char x y 51 :center 0 s s 25 11))
+
   (when actor.meters
     (each [_ meter (pairs actor.meters)]
       (let [value (. actor meter.value-field)
@@ -730,6 +429,7 @@
                     [(vec2-op + [x y] [0 -10])]
                     meter.pos)]
         (draw.progress [pos meter.size] (/ value max) meter.color))))
+
   (match actor.show-line
     (where {: color : len &as line})
     (draw.ray [x y] [actor.angle len] (or line.thickness 1) color)
@@ -737,39 +437,11 @@
     (do
       (print (.. "Warning: invalid line for " actor.kind ": "))
       (pp some_other)))
-  (case kind
-   :sword
-   (do
-    (love.graphics.setColor actor.color)
-    (love.graphics.arc :fill
-                       x y
-                       (- actor.hitbox.size 3)
-                       (- actor.angle (/ actor.rotate-speed 60))
-                       (+ actor.angle (/ actor.rotate-speed 60))
-                       20))))
 
-(fn dungeon.update-player [s dt]
-  ;; keyboard input
-  (let [shift-down? (util.shift-down?)
-        key-offsets {:a [-1 0] :h [-1 0] :left [-1 0]
-                     :s [0 1] :j [0 1] :down [0 1]
-                     :w [0 -1] :k [0 -1] :up [0 -1]
-                     :d [1 0] :l [1 0] :right [1 0]}]
-    ;; average all the angle inputs
-    (let [offset
-          (accumulate [pos [0 0]
-                       key kpos (pairs key-offsets)]
-            (if (love.keyboard.isScancodeDown key)
-                [(vec2-op + pos kpos)]
-                pos))
-          (angle distance) (geom.rectangular->polar (unpack offset))]
-      (when (> distance 0)
-           (let [speed (* s.player.speed dt (if shift-down? 0.2 1))
-                 offset [(geom.polar->rectangular
-                          angle
-                          speed)]
-                 next-pos [(vec2-op + offset s.player.pos)]]
-             (if (geom.point-in-polygon? next-pos s.level-border)
-                 (dungeon.move-player-to s next-pos)))))))
+  (when actor.draw
+    (actor.draw s actor)))
+
+(fn dungeon.log [s msg]
+  (table.insert s.log msg))
 
 dungeon
