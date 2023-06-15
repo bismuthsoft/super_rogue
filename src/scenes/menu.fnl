@@ -15,8 +15,8 @@
 (fn menu.update [s dt]
   (set s.time (+ s.time dt)))
 
-(fn menu.size [s]
-  (values 800 600))
+(fn menu.viewport [s]
+  (values 0 0 800 600))
 
 (fn menu.draw [s]
   (love.graphics.setColor [1 1 1 1])

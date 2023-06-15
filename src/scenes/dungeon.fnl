@@ -21,8 +21,8 @@
     (dungeon.next-level state)
     state))
 
-(fn dungeon.size [s]
-  (values 800 600))
+(fn dungeon.viewport [s]
+  (unpack (mapgen.polygon-bounding-box s.level-border)))
 
 (fn dungeon.next-level [s]
   (set s.level (+ s.level 1))
@@ -34,7 +34,7 @@
   (set s.will-delete {})  ; map of <actor,will-delete?> to delete actors
   (set s.actors-seen {})  ; map of <actor,place> where have been seen last
   (set s.time-til-game-over nil)
-  (let [(polygon actors) (mapgen.generate-level s.level (dungeon.size s))]
+  (let [(polygon actors) (mapgen.generate-level s.level)]
     (set s.level-border polygon)
     (each [_ args (ipairs actors)]
       (dungeon.spawn-actor s (unpack args))))

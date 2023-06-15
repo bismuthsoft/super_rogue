@@ -10,27 +10,37 @@
   (local
    DATA
    [
-    {:room-size 140
+    {
+     :room-size 120
+     :map-width 800
      :enemy-count 10
      :enemy-prob {:grid-bug 0.5 :killer-tomato 0.3}
      :coin-counts {:gold-coin 1}}
-    {:room-size 130
+    {
+     :room-size 120
+     :map-width 850
      :enemy-count 5
      :enemy-prob {:leprechaun 0.5 :grid-bug 0.3}
      :coin-counts {:gold-coin 5}}
-    {:room-size 120
+    {
+     :room-size 120
+     :map-width 900
      :enemy-count 10
      :enemy-prob {:leprechaun 0.3 :killer-tomato 0.3 :grid-bug 0.3}
      :coin-counts {:gold-coin 3}}
-    {:room-size 100
+    {
+     :room-size 120
+     :map-width 950
      :enemy-count 10
      :enemy-prob {:leprechaun 0.3 :killer-tomato 0.2 :grid-bug 0.3}
      :coin-counts {:gold-coin 3}}])
   (or (. DATA index) (lume.last DATA)))
 
-(fn mapgen.generate-level [level w h]
-  (local {: enemy-prob : enemy-count : coin-counts : room-size}
+(fn mapgen.generate-level [level]
+  (local {: enemy-prob : enemy-count : coin-counts : room-size : map-width}
          (mapgen.get-leveldata level))
+
+  (local (w h) (values map-width (* map-width (/ 5 8))))
 
   ;; place at least 4 rooms
   (fn gen-rooms []

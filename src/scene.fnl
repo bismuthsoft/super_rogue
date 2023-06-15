@@ -47,18 +47,21 @@
     (fns.update state (math.min dt (/ 1 min-framerate))))
 
   (fn love.draw []
-    ;; center the screen and preserve aspect
+    ;; center the screen and preserve aspect. The viewport function on each
+    ;; scene gives the upper left and lower right corner of the current scene.
     (let [screensize [(love.window.getMode)]
-          gamesize [(fns.size state)]
-          (scalex scaley) (vec2-op / screensize gamesize)
+          (vx1 vy1 vx2 vy2) (fns.viewport state)
+          (vw vh) (vec2-op - [vx2 vy2] [vx1 vy1])
+          (scalex scaley) (vec2-op / screensize [vw vh])
           scale (math.min scalex scaley)
-          realsize [(vec2-op * [scale scale] gamesize)]
+          realsize [(vec2-op * [scale scale] [vw vh])]
           (ox oy) (vec2-op /           ; offset to center it
                            [(vec2-op - screensize realsize)]
                            [2 2])]
       (transform:reset)
       (transform:translate ox oy)
-      (transform:scale scale))
+      (transform:scale scale)
+      (transform:translate (- vx1) (- vy1)))
     (love.graphics.applyTransform transform)
     (fns.draw state)))
 

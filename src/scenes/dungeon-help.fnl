@@ -11,8 +11,8 @@
     (lua "return"))
   (scene.bind dungeon s.dungeon-state))
 
-(fn help.size [s ...]
-  (dungeon.size s.dungeon-state))
+(fn help.viewport [s ...]
+  (dungeon.viewport s.dungeon-state))
 
 (local
  HELP-ENTRIES

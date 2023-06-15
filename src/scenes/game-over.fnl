@@ -15,8 +15,8 @@
 (fn game-over.update [s dt]
   (do))
 
-(fn game-over.size [s]
-  (values 800 600))
+(fn game-over.viewport [s]
+  (values 0 0 800 600))
 
 (fn game-over.draw [s]
   (var line 1)
