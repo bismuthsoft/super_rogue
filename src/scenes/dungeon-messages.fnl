@@ -11,8 +11,8 @@
     (lua "return"))
   (scene.bind dungeon s.dungeon-state))
 
-(fn messages.size [s ...]
-  (dungeon.size s.dungeon-state))
+(fn messages.viewport [s ...]
+  (dungeon.viewport s.dungeon-state))
 
 (fn messages.draw [s]
   (dungeon.draw s.dungeon-state)

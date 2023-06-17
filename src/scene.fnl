@@ -1,5 +1,6 @@
 (import-macros {: vec2-op} :geom-macros)
 (local lume (require :lib.lume))
+(local draw (require :draw))
 
 (local scene {})
 (var fns {})
@@ -47,20 +48,15 @@
     (fns.update state (math.min dt (/ 1 min-framerate))))
 
   (fn love.draw []
-    ;; center the screen and preserve aspect
-    (let [screensize [(love.window.getMode)]
-          gamesize [(fns.size state)]
-          (scalex scaley) (vec2-op / screensize gamesize)
-          scale (math.min scalex scaley)
-          realsize [(vec2-op * [scale scale] gamesize)]
-          (ox oy) (vec2-op /           ; offset to center it
-                           [(vec2-op - screensize realsize)]
-                           [2 2])]
-      (transform:reset)
-      (transform:translate ox oy)
-      (transform:scale scale))
+    ;; center the screen and preserve aspect. The viewport function on each
+    ;; scene gives the upper left and lower right corner of the current scene.
+    (love.graphics.push)
+    (set transform (draw.get-centered-viewport-transform (fns.viewport state)))
     (love.graphics.applyTransform transform)
-    (fns.draw state)))
+    (fns.draw state)
+    (love.graphics.pop)
+    (when fns.draw-no-transform
+      (fns.draw-no-transform state))))
 
 (set scene.global-keys {})
 
