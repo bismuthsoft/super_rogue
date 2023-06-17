@@ -1,12 +1,12 @@
 name: Release
 on:
-  # workflow_run:
-  #   workflows:
-  #     - Build
-  #   branches:
-  #     - master
-  #   types:
-  #     - completed
+  workflow_run:
+    workflows:
+      - Build
+    branches:
+      - master
+    types:
+      - completed
   push:
     tags:
       - "v*.*.*"
