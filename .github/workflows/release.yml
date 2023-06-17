@@ -79,7 +79,7 @@ jobs:
           version-string: "1.0.0"
           icon-path: ./src/assets/super_rogue.png
           # icon-path: ./.github/build/linux/dev/icon.png
-          love-package: ${{ steps.dot_love.outputs.DOT_LOVE }}
+          love-package: ./super_rogue.love
           # lib-path: ./lib
           # share-path: ./share
           build-deb: true
