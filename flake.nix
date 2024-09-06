@@ -75,7 +75,7 @@
       inherit test;
       web.src = web_src;
       web.serve = pkgs.writeShellScriptBin "super_rogue" ''
-        echo Visit https://localhost:8080/
+        echo Visit http://localhost:8080/
         exec ${pkgs.busybox}/bin/busybox httpd -f -h ${web_src} -v -p 8080
       '';
     };
