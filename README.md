@@ -40,7 +40,7 @@ nix run .#super_rogue.desktop
 nix run .#super_rogue.web.serve
 ```
 
-Visit https://localhost:8080/
+Visit http://localhost:8080/
 
 ## Contributing
 
