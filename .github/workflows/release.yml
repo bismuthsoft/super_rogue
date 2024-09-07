@@ -16,11 +16,11 @@ jobs:
   dot_love:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v20
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v27
         with:
-          nix_path: channel:nixos-22.11
-      - uses: cachix/cachix-action@v12
+          nix_path: nixpkgs=channel:nixos-24.05
+      - uses: cachix/cachix-action@v15
         with:
           name: bismuthsoft
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
@@ -30,7 +30,7 @@ jobs:
               "$(nix eval --raw .#super_rogue.dot_love)/super_rogue.love" \
               >> "$GITHUB_OUTPUT"
         id: dot_love
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: dot_love-${{ github.sha }}
           path: ${{ steps.dot_love.outputs.DOT_LOVE }}
@@ -40,11 +40,11 @@ jobs:
       - dot_love  # Use pre-built game.love via cachix
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v20
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v27
         with:
-          nix_path: channel:nixos-22.11
-      - uses: cachix/cachix-action@v12
+          nix_path: nixpkgs=channel:nixos-24.05
+      - uses: cachix/cachix-action@v15
         with:
           name: bismuthsoft
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
@@ -65,8 +65,8 @@ jobs:
       - dot_love
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
           name: dot_love-${{ github.sha }}
       - name: Build Linux packages
@@ -95,8 +95,8 @@ jobs:
       - dot_love
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
           name: dot_love-${{ github.sha }}
       - name: Build macOS packages
@@ -122,7 +122,7 @@ jobs:
           dmg-volume-name: "super_rogue"
           dmg-window-position: "200 120"
           dmg-window-size: "1024 604"
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: dist-mac
           path: dist
@@ -131,8 +131,8 @@ jobs:
       - dot_love
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
           name: dot_love-${{ github.sha }}
       - name: Build Windows packages
@@ -159,20 +159,20 @@ jobs:
       - dot_love
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: dot_love-${{ github.sha }}
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: dist-windows
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: dist-linux
       - run: |
           mv super_rogue_x86.zip super_rogue_windows_x86.zip
           mv super_rogue_x64.zip super_rogue_windows_x64.zip
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         # if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
