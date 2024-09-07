@@ -1,12 +1,5 @@
 name: Release
 on:
-  # workflow_run:
-  #   workflows:
-  #     - Build
-  #   branches:
-  #     - master
-  #   types:
-  #     - completed
   push:
     tags:
       - "v*.*.*"
@@ -186,9 +179,7 @@ jobs:
           mv super_rogue_x64.zip super_rogue_windows_x64.zip
       - name: Release
         uses: softprops/action-gh-release@v2
-        # if: startsWith(github.ref, 'refs/tags/')
         with:
-          draft: true
           files: |
             super_rogue.love
 
