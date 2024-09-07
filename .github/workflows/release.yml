@@ -55,7 +55,7 @@ jobs:
               >> "$GITHUB_OUTPUT"
         id: web_src
       # cf https://github.com/actions/upload-pages-artifact/blob/main/action.yml
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: ${{ steps.web_src.outputs.WEB_SRC }}
   website:
