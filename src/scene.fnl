@@ -43,8 +43,11 @@
   (bind-love-mouse :mousepressed)
   (bind-love-mouse :mousereleased)
 
-  (fn love.update [dt]
-    (fns.update state (math.min dt (/ 1 min-framerate))))
+  (set love.update
+       (match fns.update
+         (where callback) (fn [dt]
+                            (callback state (math.min dt (/ 1 min-framerate))))
+         _ (fn [dt] nil)))
 
   (fn love.draw []
     ;; center the screen and preserve aspect
