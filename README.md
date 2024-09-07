@@ -1,5 +1,7 @@
 # Super Rogue
 
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
+
 *(Not [that][original-super-rogue] super rogue!)*
 
 Inspired by [SUPERHOT][superhot].
@@ -11,11 +13,15 @@ Inspired by [SUPERHOT][superhot].
 
 ### Online
 
-This project's default branch deploys to
-[super-rogue.workinprogress.top](https://super-rogue.workinprogress.top/).
+Each release is automatically published to [bismuthsoft.github.io/super_rogue][web].
 
-Each commit is deployed to its own public URL.  See comments in PRs or GitHub
-Actions transcripts for URLs.
+[web]: https://bismuthsoft.github.io/super_rogue/
+
+### Pre-built for Linux, Windows
+
+See our [releases page](https://github.com/bismuthsoft/super_rogue/releases) for downloads targeting Windows, Linux, and more!
+
+*(Mac users, please consider downloading the `.love` file or playing [the web version][web].)*
 
 ### Run natively from source
 
@@ -26,13 +32,14 @@ Install [LÖVE (love2d)][love2d].  Then run:
 love src
 ```
 
-Or if you have nix:
+Or if you have nix (non-NixOS users need [nixGL][nixGL]):
 
 ```bash
 nix run .#super_rogue.desktop
 ```
 
 [love2d]: https://love2d.org/
+[nixGL]: https://github.com/nix-community/nixGL
 
 ### Run in-browser from source
 
@@ -55,7 +62,7 @@ We use a standard GitHub Pull Request workflow.
 ### Running tests
 
 ```bash
-run run .#super_rogue.test
+nix run .#super_rogue.test
 ```
 
 
