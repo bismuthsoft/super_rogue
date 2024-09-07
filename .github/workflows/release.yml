@@ -51,7 +51,7 @@ jobs:
       - run: nix build .#super_rogue.web.src
       - run: |
           printf 'WEB_SRC=%s\n' \
-              "$(nix eval --raw .#super_rogue.dot_love)/super_rogue.web.src \
+              "$(nix eval --raw .#super_rogue.web.src)" \
               >> "$GITHUB_OUTPUT"
         id: web_src
       # cf https://github.com/actions/upload-pages-artifact/blob/main/action.yml
