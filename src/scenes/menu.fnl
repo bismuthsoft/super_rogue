@@ -1,4 +1,5 @@
 (import-macros {: vec2-op} :geom-macros)
+(local version (require :version))
 (local geom (require :geom))
 (local util (require :util))
 (local draw (require :draw))
@@ -20,7 +21,7 @@
 
 (fn menu.draw [s]
   (love.graphics.setColor [1 1 1 1])
-  (love.graphics.print "Super Rogue 0.1.0 - JamFix" 300 100)
+  (love.graphics.print (string.format "Super Rogue %s - %s" version.version version.name) 300 100)
   (love.graphics.setColor [.7 .7 .7 1])
   (love.graphics.print "By 44100hz & winny" 300 150)
   (when (not= 0 (% (lume.round s.time) 5))

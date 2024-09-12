@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+
+# TODO: Work without admin / bypass push rules
+
+DEFAULT_BRANCH=master
+
+matchver() {
+    # shellcheck disable=SC2319
+    [[ $1 =~ v([0-9]+)\.([0-9]+)\.([0-9]+) ]] || return $?
+    patch=${BASH_REMATCH[3]}
+    minor=${BASH_REMATCH[2]}
+    major=${BASH_REMATCH[1]}
+}
+
+fmtver() {
+    local maj min pat
+    maj=$1
+    min=$2
+    pat=$3
+    printf 'v%s.%s.%s' "$maj" "$min" "$pat"
+}
+
+prompt() {
+    read -re -p "$* "
+    echo "$REPLY"
+}
+
+panic() {
+    printf 'ERR %s\n' >&2 "$*"
+    exit 1
+}
+
+################################################################
+
+if [[ $(git status -s) ]]; then
+    panic 'Dirty work tree'
+fi
+
+if [[ $(git branch --show-current) != "$DEFAULT_BRANCH" ]]; then
+    panic "Please run git switch $DEFAULT_BRANCH"
+fi
+
+if ! latest=$(git describe --tags --match="v[0-9]*" --abbrev=0 HEAD); then
+    panic 'Could not detect a recent version tag!'
+fi
+
+if ! matchver "$latest"; then
+    panic 'Could not extract version components'
+fi
+
+if ! ver=$(prompt 'Latest version is' "$(fmtver "$major" "$minor" "$patch")." ' Next version?'); then
+    panic 'Could not get next version'
+fi
+
+if ! matchver "$ver"; then
+    panic 'Invalid version inputted.'
+fi
+
+
+if ! [[ $latest < $ver ]]; then
+    panic "$ver < $latest!  Need a version that lexicographically sorts after $latest."
+fi
+
+if ! name=$(prompt '(Nick)name for this release.  Make it fun!'); then
+    panic 'Could not get name'
+fi
+
+sed -i''\
+    -e "s,:version \".*\",:version \"$ver\"," \
+    -e "s,:name \".*\",:name \"$name\"," \
+    src/version.fnl
+
+git add src/version.fnl
+git commit -m "release: $ver - $name"
+git tag "$ver"
+
+prompt 'Everything look right?  Type Control-c to cancel.'
+
+git push origin "$DEFAULT_BRANCH"
+git push origin "$ver"
+
+echo 'Check https://github.com/bismuthsoft/super_rogue/actions/workflows/release.yml'
+echo "Then edit https://github.com/bismuthsoft/super_rogue/releases/tag/$ver"
