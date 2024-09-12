@@ -1,2 +1,2 @@
-{:version "0.1.0"
- :name "JamFix"}
+{:version "v0.1.1"
+ :name "HelpMe"}
