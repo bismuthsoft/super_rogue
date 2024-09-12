@@ -19,7 +19,8 @@ Each release is automatically published to [bismuthsoft.github.io/super_rogue][w
 
 ### Pre-built for Linux, Windows
 
-See our [releases page](https://github.com/bismuthsoft/super_rogue/releases) for downloads targeting Windows, Linux, and more!
+See our [releases page][releases] for downloads targeting Windows, Linux, and
+more!
 
 *(Mac users, please consider downloading the `.love` file or playing [the web version][web].)*
 
@@ -73,3 +74,12 @@ To run tests and run the desktop version of the game upon code change, try this 
 ```
 find src | entr -r sh -c 'nix run .#super_rogue.test && nix run .#super_rogue.desktop'
 ```
+### Release checklist
+
+1. Run `./scripts/release`.  Fill out the blanks.
+2. Verify the [Release GitHub Action][github release action] completed.
+3. Update the newly crafted [release entry][releases] with a description of changes.
+
+[github release action]: https://github.com/bismuthsoft/super_rogue/actions/workflows/release.yml
+
+[releases]: https://github.com/bismuthsoft/super_rogue/releases
