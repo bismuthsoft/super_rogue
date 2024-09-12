@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 set -eu -o pipefail
 
+# TODO: Work without admin / bypass push rules
+
+DEFAULT_BRANCH=master
+
 matchver() {
+    # shellcheck disable=SC2319
     [[ $1 =~ v([0-9]+)\.([0-9]+)\.([0-9]+) ]] || return $?
     patch=${BASH_REMATCH[3]}
     minor=${BASH_REMATCH[2]}
@@ -32,6 +37,10 @@ if [[ $(git status -s) ]]; then
     panic 'Dirty work tree'
 fi
 
+if [[ $(git branch --show-current) != "$DEFAULT_BRANCH" ]]; then
+    panic "Please run git switch $DEFAULT_BRANCH"
+fi
+
 if ! latest=$(git describe --tags --match="v[0-9]*" --abbrev=0 HEAD); then
     panic 'Could not detect a recent version tag!'
 fi
@@ -58,8 +67,8 @@ if ! name=$(prompt '(Nick)name for this release.  Make it fun!'); then
 fi
 
 sed -i''\
-    -e "s,:version \".*\"/:version \"$ver\"," \
-    -e "s,:name \".*\"/:name \"$name\"," \
+    -e "s,:version \".*\",:version \"$ver\"," \
+    -e "s,:name \".*\",:name \"$name\"," \
     src/version.fnl
 
 git add src/version.fnl
@@ -68,6 +77,7 @@ git tag "$ver"
 
 prompt 'Everything look right?  Type Control-c to cancel.'
 
+git push origin "$DEFAULT_BRANCH"
 git push origin "$ver"
 
 echo 'Check https://github.com/bismuthsoft/super_rogue/actions/workflows/release.yml'
