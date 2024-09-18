@@ -36,7 +36,7 @@
 
 (fn kt.on-death [s actor]
   (when (< (love.math.random) 0.2)
-    (dungeon.spawn-actor s :tomato actor.pos
-        (dungeon.log (.. "The Killer Tomato became docile!")))))
+    (dungeon.spawn-actor s :tomato actor.pos))
+  (dungeon.log (.. "The Killer Tomato became docile!")))
 
 kt
