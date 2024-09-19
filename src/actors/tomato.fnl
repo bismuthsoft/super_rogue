@@ -1,7 +1,7 @@
 (local tomato {})
 
 (fn tomato.spawn [s pos]
-  {: kind
+  {:kind "tomato"
    :name "tomato"
    : pos
    :color [1 0 0]
