@@ -38,6 +38,6 @@
   (when (< (love.math.random) 0.2)
     (do
       (dungeon.spawn-actor s :tomato actor.pos)
-      (dungeon.log "The Killer Tomato became docile!"))))
+      (dungeon.log s "The Killer Tomato became docile!"))))
 
 kt
