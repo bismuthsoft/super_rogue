@@ -8,6 +8,7 @@
 (var mapgen (require :mapgen))
 (local lume (require :lib.lume))
 (local pp util.pp)
+(local ent (require :lib.ent))
 
 (local dungeon {})
 
@@ -241,6 +242,7 @@
                             :char-scale 0.5}))))
 
 (fn dungeon.spawn-actor [s kind ...]
+  (ent.info "spawn-actor %s" kind)
   (local actor-class (require (.. "actors." kind)))
   (local actor (actor-class.spawn s ...))
   (match kind
@@ -332,6 +334,7 @@
   nil)
 
 (fn dungeon.delete-actor [s actor]
+  (ent.info "delete-actor %s" actor.kind)
   (match actor.on-death
     (where callback) (callback s actor))
   (tset s.will-delete actor true))
